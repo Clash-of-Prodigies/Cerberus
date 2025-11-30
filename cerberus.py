@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request
 from functools import wraps
 from dotenv import load_dotenv
-from jwt import InvalidTokenError, ExpiredSignatureError, decode as jwt_decode, get_unverified_header
+from jwt import InvalidTokenError, ExpiredSignatureError
 load_dotenv()
 
 import echidna
@@ -33,7 +33,7 @@ def login():
     try:
         data = request.get_json(silent=True) or request.form
         user = echidna.User(**data)
-        echidna.checkUserExists(user, True)
+        echidna.checkUserExists(user, True, True)
         password = echidna.getUserPasswordHash(user)
         echidna.verify_password(user.password, password)
         response = jsonify({'message': 'Login Successful'})
@@ -44,7 +44,7 @@ def login():
         response.set_cookie(
             'jwt', token,
             httponly=True, secure=request.is_secure, samesite='Lax', path='/',
-            max_age=30*60 # Make sure it matches exp in token_creation
+            max_age=30*60
         )
         return response, 200
     except ValueError as ve:
@@ -112,19 +112,18 @@ def token_required(f):
             if ver_claim != ver_db:
                 return jsonify({"message": "Token superseded"}), 401
 
-            skew = 10  # 10s default
+            skew = 10
             if iat < (pw_cutoff - echidna.timedelta(seconds=skew)):
                 print(f"[debug] iat={iat.isoformat()} pw_cutoff={pw_cutoff.isoformat()} skew={skew}s")
                 return jsonify({"message": "Token older than password change"}), 401
 
         except ExpiredSignatureError:
-            return jsonify({"message": "Token expired"}), 401
+            return jsonify({"message": "Token expired", "redirect": "/login"}), 401
         except InvalidTokenError:
-            return jsonify({"message": "Invalid token"}), 401
+            return jsonify({"message": "Invalid token", "redirect": "/login"}), 401
         except Exception as e:
             print(f"Error in token verification: {e}")
-            return jsonify({"message": "Token verification failed"}), 401
-
+            return jsonify({"message": "Token verification failed", "redirect": "/login"}), 401
         return f(sub, *args, **kwargs)
     return wrapped
 
@@ -191,22 +190,14 @@ def rotate_keys():
 
         # 1) generate keypair in-process (PEM strings), then write to disk
         private_pem, public_pem = echidna.gen_rsa_pair(new_kid, bits=bits)
-        echidna.write_key_files(new_kid, private_pem, public_pem, echidna.KEYS_DIR)
+        echidna.write_key_files(new_kid, private_pem, public_pem)
 
         # 2) insert public key as 'staging'
         echidna._insert_staging_key(new_kid, public_pem)
 
         # 3) switch signer to new kid and flip statuses
-        echidna._write_active_kid(new_kid)
         resp = echidna._promote_and_retire(new_kid, grace_minutes)
-
-        if resp is None:
-            resp = {
-                "message": "Rotation complete",
-                "new_kid": new_kid,
-                "keys_dir": echidna.KEYS_DIR,
-                "active_kid_file": echidna.ACTIVE_KID_FILE,
-            }
+        echidna._write_active_kid(new_kid)
         return jsonify(resp), 200
 
     except PermissionError as pe:
