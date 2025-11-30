@@ -8,5 +8,6 @@
 __pycache__/
 *.pyc
 
-# secret sh
-secret.sh
+# Ignore keys and active kid file
+keys/
+ACTIVE_KID*
