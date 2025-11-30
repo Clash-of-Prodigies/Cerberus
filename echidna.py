@@ -114,10 +114,9 @@ def isNameAvailable(name: str, expected: bool = True):
         print(f"Error checking name availability: {e}")
         raise RuntimeError("Failed to check name availability.")
 
-def checkUserExists(user: User, expected: bool):
+def checkUserExists(user: User, expected: bool, verifyIfUserIsPending: bool = False):
     try:
         conn = get_connection(); cur = conn.cursor()
-        # Look up once, then decide based on status
         cur.execute("""
             SELECT status
               FROM credentials
@@ -130,12 +129,15 @@ def checkUserExists(user: User, expected: bool):
         exists = row is not None
         is_active = (row and row[0] == 'active')
 
-        if expected:           # login/reset: must exist AND be active
+        if expected:
             if not (exists and is_active):
-                raise ValueError(f"User or password is invalid. Exists: {exists}, Active: {is_active}")
-        else:                  # registration: must NOT exist at all
+                if verifyIfUserIsPending and exists and not row[0] == 'pending':
+                    attempt_verification(user, channel='', purpose='registration')
+                    raise ValueError("User is pending verification. A new OTP has been sent.")
+                raise ValueError(f"User or password is invalid.")
+        else:
             if exists:
-                raise ValueError("User already exists.")
+                raise ValueError("User already exists. Proceed to login.")
     except Exception as e:
         print(f"Error checking user existence: {e}")
         raise RuntimeError("Failed to check user existence.")
@@ -235,8 +237,7 @@ def make_access_token(prodigy_id: str, ttl_minutes=60):
     now = datetime.now(timezone.utc)
     jti = str(uuid.uuid4())
 
-    # 1) get active kid + private key
-    kid = get_active_kid()                 # reads ACTIVE_KID_FILE
+    kid = get_active_kid()
     private_pem = _load_private_key_for_kid(kid)
 
     ISS = environmentals('JWT_ISS', 'Cerberus')
@@ -250,10 +251,9 @@ def make_access_token(prodigy_id: str, ttl_minutes=60):
         "nbf": int(now.timestamp()),
         "exp": int((now + timedelta(minutes=ttl_minutes)).timestamp()),
         "jti": jti,
-        "ver": _get_token_version(int(prodigy_id))[0],  # if you added versioning
+        "ver": _get_token_version(int(prodigy_id))[0],
     }
 
-    # 3) include kid in the JWT header
     return jwt.encode(payload, private_pem, algorithm="RS256", headers={"kid": kid})
 
 def send_otp(user: User, data: dict[str, str], idempotent_key: str, channel: str) -> None:
@@ -462,7 +462,6 @@ def delete_refresh_tokens(pid: int) -> None:
     cur.execute("DELETE FROM refresh_tokens WHERE prodigy_id=%s", (int(pid),))
     conn.commit(); cur.close(); conn.close()
 
-# echidna.py
 def _get_token_version(prodigy_id: int) -> tuple[int, datetime]:
     with get_connection() as conn:
         cur = conn.cursor()
@@ -475,10 +474,6 @@ def _get_token_version(prodigy_id: int) -> tuple[int, datetime]:
         if not row:
             raise ValueError("User not found.")
         return row[0], row[1]
-
-ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "")
-KEYS_DIR = os.environ.get("KEYS_DIR", "./keys")
-ACTIVE_KID_FILE = os.environ.get("ACTIVE_KID_FILE", "./ACTIVE_KID")
 
 def gen_rsa_pair(kid: str, bits: int = 2048, passphrase: str | None = None) -> tuple[str, str]:
     key = jwk.JWK.generate(kty="RSA", size=bits, kid=kid, use="sig", alg="RS256")
@@ -494,7 +489,8 @@ def gen_rsa_pair(kid: str, bits: int = 2048, passphrase: str | None = None) -> t
 
     return priv_bytes.decode("utf-8"), pub_bytes.decode("utf-8")
 
-def write_key_files(kid: str, private_pem: str, public_pem: str, keys_dir: str) -> tuple[str, str]:
+def write_key_files(kid: str, private_pem: str, public_pem: str) -> tuple[str, str]:
+    keys_dir = environmentals("KEYS_DIR", "./keys")
     os.makedirs(keys_dir, exist_ok=True)
     priv_path = os.path.join(keys_dir, f"{kid}.pem")
     pub_path  = os.path.join(keys_dir, f"{kid}.pub")
@@ -513,6 +509,7 @@ def _read_text(path: str) -> str:
         return f.read()
 
 def _write_active_kid(kid: str):
+    ACTIVE_KID_FILE = environmentals("ACTIVE_KID_FILE", "./ACTIVE_KID")
     os.makedirs(os.path.dirname(ACTIVE_KID_FILE), exist_ok=True)
     with open(ACTIVE_KID_FILE, "w", encoding="utf-8") as f:
         f.write(kid.strip())
@@ -525,7 +522,7 @@ def _get_current_active_kid():
     cur.close(); conn.close()
     return row[0] if row else None
 
-def _promote_and_retire(new_kid: str, grace_minutes: int = 45) -> dict | None:
+def _promote_and_retire(new_kid: str, grace_minutes: int = 45) -> dict:
     verify_until_ts = datetime.now(timezone.utc) + timedelta(minutes=grace_minutes)
     conn = get_connection(); cur = conn.cursor()
     try:
@@ -549,19 +546,30 @@ def _promote_and_retire(new_kid: str, grace_minutes: int = 45) -> dict | None:
              WHERE kid = %s OR status = 'active'
         """, (new_kid, new_kid, new_kid, new_kid, verify_until_ts, new_kid))
         conn.commit()
-    except Exception:
+    except Exception as e:
         conn.rollback()
-        raise
+        raise e
     finally:
         cur.close(); conn.close()
+        return {
+            "message": "Rotation complete",
+            "new_kid": new_kid,
+            "keys_dir": environmentals("KEYS_DIR", "./keys"),
+            "active_kid_file": environmentals("ACTIVE_KID_FILE", "./ACTIVE_KID"),
+            "grace_minutes": grace_minutes,
+            "verify_until": verify_until_ts.isoformat(),
+            "previous_active_kid": _get_current_active_kid(),
+        }
 
 def get_active_kid() -> str:
+    ACTIVE_KID_FILE = environmentals("ACTIVE_KID_FILE", "./ACTIVE_KID")
     kid_file = ACTIVE_KID_FILE
     if os.path.exists(kid_file):
         return open(kid_file, "r", encoding="utf-8").read().strip()
     raise RuntimeError("ACTIVE_KID_FILE not found; cannot sign tokens")
 
 def _load_private_key_for_kid(kid: str) -> str:
+    KEYS_DIR = environmentals("KEYS_DIR", "./keys")
     path = os.path.join(KEYS_DIR, f"{kid}.pem")
     if not os.path.exists(path):
         raise RuntimeError(f"Private key for kid={kid} not found")
