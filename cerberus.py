@@ -1,8 +1,6 @@
 from flask import Flask, jsonify, request
 from functools import wraps
-from dotenv import load_dotenv
 from jwt import InvalidTokenError, ExpiredSignatureError
-load_dotenv()
 
 import echidna
 

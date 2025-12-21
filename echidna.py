@@ -3,8 +3,6 @@ from jwcrypto import jwk
 from datetime import datetime, timezone, timedelta
 from psycopg import Connection, connect as pg_connect
 from psycopg.errors import OperationalError
-from dotenv import load_dotenv
-load_dotenv()
 
 import os
 import re
