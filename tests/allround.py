@@ -110,7 +110,7 @@ def main():
     print_title("Verify REGISTRATION with OTP")
     print("(Check your Hermes mock output for the REGISTRATION OTP...)")
     reg_code = read_otp("registration")
-    r = SA.post(f"{BASE}/forgot", json={
+    r = SA.post(f"{BASE}/verify", json={
         "email": args.email,
         "code": reg_code,
         "channel": "email",
@@ -137,7 +137,7 @@ def main():
 
     # 5) Initiate password reset
     print_title("Initiate password reset")
-    r = SA.post(f"{BASE}/forgot", json={"email": args.email, "channel": "email"})
+    r = SA.post(f"{BASE}/verify", json={"email": args.email, "channel": "email"})
     expect_status(r, 200, "forgot init")
 
     print("(Check your Hermes mock output for the RESET OTP...)")
@@ -145,7 +145,7 @@ def main():
 
     # 6) Complete password reset
     print_title("Complete password reset")
-    r = SA.post(f"{BASE}/forgot", json={
+    r = SA.post(f"{BASE}/verify", json={
         "email": args.email,
         "channel": "email",
         "code": reset_code,

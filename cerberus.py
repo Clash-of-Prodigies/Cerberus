@@ -53,8 +53,8 @@ def login():
         print(f"Error in login: {e}")
         return jsonify({'message': 'Something went wrong'}), 401
 
-@app.route('/forgot', methods=["POST"])
-def forgot_password():
+@app.route('/verify', methods=["POST"])
+def verify_or_forgot():
     try:
         data = request.get_json(silent=True) or request.form
         user = echidna.User(**data) 

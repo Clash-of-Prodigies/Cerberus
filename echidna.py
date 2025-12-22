@@ -116,11 +116,10 @@ def checkUserExists(user: User, expected: bool, verifyIfUserIsPending: bool = Fa
     try:
         conn = get_connection(); cur = conn.cursor()
         cur.execute("""
-            SELECT status
-              FROM credentials
-             WHERE ((email=%s AND %s <> '') OR (telegram=%s AND %s <> ''))
-             LIMIT 1
-        """, (user.email, user.email, user.telegram, user.telegram))
+            SELECT status, name FROM credentials
+            WHERE ((email=%s AND %s <> '') OR (telegram=%s AND %s <> ''))
+            LIMIT 1""",
+            (user.email, user.email, user.telegram, user.telegram))
         row = cur.fetchone()
         cur.close(); conn.close()
 
@@ -254,7 +253,7 @@ def make_access_token(prodigy_id: str, ttl_minutes=60):
 
     return jwt.encode(payload, private_pem, algorithm="RS256", headers={"kid": kid})
 
-def send_otp(user: User, data: dict[str, str], idempotent_key: str, channel: str) -> None:
+def send_message(user: User, data: dict[str, str], subject: str, idempotent_key: str, channel: str) -> None:
     """
     Send a verification code to the user's email via the Messenger service
     """
@@ -267,10 +266,12 @@ def send_otp(user: User, data: dict[str, str], idempotent_key: str, channel: str
             raise ValueError("No contact information provided for verification.")
     recipient = user.email if channel == 'email' else user.telegram
     MESSENGER_SERVICE = environmentals('MESSENGER_ENDPOINT', 'http://localhost:6000/')
+    sender = environmentals('MESSENGER_SENDER_NAME', 'Prodigy <noreply@clashofprodigies.org>')
     payload = {
         'channel': channel,
         'to': recipient,
-        'subject': 'Verify Your Account',
+        'sender': sender,
+        'subject': subject,
         'data': data,
         'idempotent_key': idempotent_key
     }
@@ -320,7 +321,7 @@ def attempt_verification(user: User, channel: str = '', purpose: str = 'reset') 
     # send via Messaging service
     data = {'code': code}
     if purpose == 'registration': data['username'] = user.name
-    send_otp(user, data, idempotent_key, channel)
+    send_message(user, data, 'Verify Your Account', idempotent_key, channel)
 
 def verify_otp(user: User, code: str, purpose: str = 'reset', channel: str = '') -> None:
     prodigy_id = _get_prodigy_id_by_email_or_telegram(user)
@@ -415,6 +416,7 @@ def mark_user_verified(user: User) -> None:
             OR (telegram=%s AND %s <> '')
     """, (user.email, user.email, user.telegram, user.telegram))
     conn.commit(); cur.close(); conn.close()
+    send_message(user, {}, 'Welcome to Prodigy!', str(uuid.uuid4()), channel='email' if user.email else 'telegram')
 
 def is_access_jti_revoked(jti: str) -> bool:
     with get_connection() as conn:
