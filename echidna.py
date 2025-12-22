@@ -266,7 +266,7 @@ def send_otp(user: User, data: dict[str, str], idempotent_key: str, channel: str
         else:
             raise ValueError("No contact information provided for verification.")
     recipient = user.email if channel == 'email' else user.telegram
-    MESSENGER_SERVICE = environmentals('HERMES_GENERAL_ENDPOINT', 'http://Hermes:6000/')
+    MESSENGER_SERVICE = environmentals('MESSENGER_ENDPOINT', 'http://localhost:6000/')
     payload = {
         'channel': channel,
         'to': recipient,
