@@ -1,11 +1,34 @@
 from flask import Flask, jsonify, request
 from functools import wraps
 from jwt import InvalidTokenError, ExpiredSignatureError
+from urllib.parse import urlparse
 
 import echidna
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = echidna.send_secret()
+
+ALLOWED_ROOTS = ["clash-of-prodigies.github.io", "clashofprodigies.org"]
+
+def is_allowed_origin(origin: str) -> bool:
+    if not origin:
+        return False
+    parsed = urlparse(origin)
+    host = parsed.hostname
+    if not host:
+        return False
+    return any(host == root or host.endswith("." + root) for root in ALLOWED_ROOTS)
+
+@app.after_request
+def add_cors_headers(response):
+    origin = request.headers.get("Origin")
+    if origin and is_allowed_origin(origin):
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Vary"] = "Origin"
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS, PUT, DELETE"
+    return response
 
 @app.route('/register', methods=['POST'])
 def register():
