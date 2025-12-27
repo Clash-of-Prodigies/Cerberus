@@ -112,7 +112,7 @@ def isNameAvailable(name: str, expected: bool = True):
         print(f"Error checking name availability: {e}")
         raise RuntimeError("Failed to check name availability.")
 
-def checkUserExists(user: User, expected: bool, verifyIfUserIsPending: bool = False):
+def checkUserExists(user: User, expected: bool):
     row = None
     with get_connection() as conn:
         with conn.cursor() as cur:
@@ -125,17 +125,18 @@ def checkUserExists(user: User, expected: bool, verifyIfUserIsPending: bool = Fa
 
     exists = row is not None
     is_active = (row and row[0] == 'active')
+    is_pending = (row and row[0] == 'pending')
 
-    if expected:
-        if not (exists and is_active):
-            if verifyIfUserIsPending and exists and not row[0] == 'pending':
-                attempt_verification(user, channel='', purpose='registration')
-                raise ValueError("User is pending verification. A new OTP has been sent.")
-            raise ValueError(f"User or password is invalid.")
-    else:
-        if exists:
-            raise ValueError("User already exists. Proceed to login.")
 
+    if expected != exists:
+        if is_pending:
+            attempt_verification(user, channel='', purpose='registration')
+            raise ValueError("User is pending verification. A new OTP has been sent.")
+        elif not is_active:
+            raise ValueError("User is not active. Contact support.")
+        else:
+            raise ValueError("User or password is invalid!")
+            # keep the password part so attackers can't enumerate valid users
 
 def getUserPasswordHash(user: User) -> str:
     conn = get_connection(); cur = conn.cursor()

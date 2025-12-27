@@ -61,7 +61,7 @@ def login():
     try:
         data = request.get_json(silent=True) or request.form
         user = echidna.User(**data)
-        echidna.checkUserExists(user, True, True)
+        echidna.checkUserExists(user, True)
         password = echidna.getUserPasswordHash(user)
         echidna.verify_password(user.password, password)
         response = jsonify({'message': 'Login Successful'})
