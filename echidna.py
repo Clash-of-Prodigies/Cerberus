@@ -261,7 +261,7 @@ def send_message(user: User, data: dict[str, str], subject: str, idempotent_key:
             channel = 'telegram'
         else:
             raise ValueError("No contact information provided for verification.")
-    recipient = user.email if channel == 'email' else user.telegram
+    recipient = user.name
     MESSENGER_SERVICE = environmentals('MESSENGER_ENDPOINT', 'http://localhost:6000/')
     sender = environmentals('MESSENGER_SENDER_NAME', 'Prodigy <noreply@clashofprodigies.org>')
     payload = {
