@@ -116,7 +116,7 @@ def checkUserExists(user: User, expected: bool, verifyIfUserIsPending: bool = Fa
     row = None
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("""SELECT status, name FROM credentials
+            cur.execute("""SELECT status, username FROM credentials
                 WHERE ((email=%s AND %s <> '') OR (telegram=%s AND %s <> ''))
                 LIMIT 1""",
                 (user.email, user.email, user.telegram, user.telegram)
