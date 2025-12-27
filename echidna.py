@@ -306,6 +306,30 @@ def _insert_otp(prodigy_id, purpose, channel, code_hash, ttl_minutes=10):
     """, (str(uuid.uuid4()), prodigy_id, purpose, channel, code_hash, expires_at))
     conn.commit(); cur.close(); conn.close()
 
+def _update_otp(id, code_hash):
+    conn = get_connection(); cur = conn.cursor()
+    cur.execute("""
+      UPDATE otp_tokens
+         SET code_hash=%s, expires_at=now()+interval '10 minutes', attempts=0,
+             sent_count=sent_count+1, last_sent_at=now(), consumed_at=NULL
+       WHERE id=%s
+    """, (code_hash, id))
+    conn.commit(); cur.close(); conn.close()
+
+def _check_if_otp_was_consumed(prodigy_id, purpose, channel) -> str:
+    conn = get_connection(); cur = conn.cursor()
+    cur.execute("""
+      SELECT id
+        FROM otp_tokens
+       WHERE prodigy_id=%s AND purpose=%s AND (channel=%s OR %s='')
+       ORDER BY expires_at DESC
+       LIMIT 1
+    """, (prodigy_id, purpose, channel or '', channel or ''))
+    row = cur.fetchone(); cur.close(); conn.close()
+    if not row:
+        return ''
+    return row[0]
+
 def attempt_verification(user: User, channel: str = '', purpose: str = 'reset') -> None:
     if not user.email and not user.telegram:
         raise ValueError("No contact information provided for verification.")
@@ -315,10 +339,15 @@ def attempt_verification(user: User, channel: str = '', purpose: str = 'reset') 
     idempotent_key = str(uuid.uuid4())
     code_hash = hashlib.sha256(code.encode()).hexdigest()
     prodigy_id = _get_prodigy_id_by_email_or_telegram(user)
-    _insert_otp(prodigy_id, purpose, channel or ('email' if user.email else 'telegram'), code_hash)
+    existing_otp_id = _check_if_otp_was_consumed(prodigy_id, purpose, channel)
+    if existing_otp_id:
+        _update_otp(existing_otp_id, code_hash)
+    else:
+        _insert_otp(prodigy_id, purpose, channel or ('email' if user.email else 'telegram'), code_hash)
+    
     # send via Messaging service
     data = {'code': code}
-    if purpose == 'registration': data['username'] = user.name
+    data['username'] = user.name
     send_message(user, data, 'Verify Your Account', idempotent_key, channel)
 
 def verify_otp(user: User, code: str, purpose: str = 'reset', channel: str = '') -> None:
