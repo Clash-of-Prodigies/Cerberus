@@ -4,6 +4,12 @@ from jwt import InvalidTokenError, ExpiredSignatureError
 from urllib.parse import urlparse
 
 import echidna
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = echidna.send_secret()
@@ -46,7 +52,8 @@ def register():
         return jsonify({'message': str(ve)}), 401
     except ConnectionError as ce:
         return jsonify({'message': str(ce)}), 500
-    except Exception:
+    except Exception as e:
+        logging.error(f"Error in registration: {e}")
         return jsonify({'message': 'Something went wrong!'}), 401
 
 @app.route('/login', methods=['POST'])
@@ -73,7 +80,7 @@ def login():
     except ConnectionError as ce:
         return jsonify({'message': str(ce)}), 500
     except Exception as e:
-        print(f"Error in login: {e}")
+        logging.error(f"Error in login: {e}")
         return jsonify({'message': 'Something went wrong'}), 401
 
 @app.route('/verify', methods=["POST"])
@@ -105,7 +112,7 @@ def verify_or_forgot():
     except ConnectionError as ce:
         return jsonify({'message': str(ce)}), 500
     except Exception as e:
-        print(f"Error in forgot_password: {e}")
+        logging.error(f"Error in verify: {e}")
         return jsonify({'message': 'Something went wrong!'}), 401
 
 
@@ -143,7 +150,7 @@ def token_required(f):
         except InvalidTokenError:
             return jsonify({"message": "Invalid token", "redirect": "/login"}), 401
         except Exception as e:
-            print(f"Error in token verification: {e}")
+            logging.error(f"Error in token verification: {e}")
             return jsonify({"message": "Token verification failed", "redirect": "/login"}), 401
         return f(sub, *args, **kwargs)
     return wrapped
@@ -174,7 +181,8 @@ def logout(pid: str):
         exp = claims.get("exp") or 0
         echidna.revoke_access_jti(jti, int(pid), exp)
     except Exception as e:
-        print(f"Error in logout token revocation: {e}")
+        logging.error(f"Error in logout: {e}")
+        return jsonify({"message": "Logout failed"}), 500
 
     want_all = False
     if request.is_json:
@@ -205,27 +213,33 @@ def rotate_keys():
         CERBERUS_SECRET = echidna.send_secret()
         token = request.args.get("token", "")
         if not token: return "forbidden", 403
-        if token != CERBERUS_SECRET: return f"forbidden", 403
+        if token != CERBERUS_SECRET: return "forbidden", 403
         body = request.get_json(silent=True) or {}
         bits, grace_minutes, new_kid = echidna.resolve_rotate_keys_auth(body)
+        logging.info(f"Rotating keys: bits={bits}, grace_minutes={grace_minutes}, new_kid={new_kid}")
 
         # 1) generate keypair in-process (PEM strings), then write to disk
         private_pem, public_pem = echidna.gen_rsa_pair(new_kid, bits=bits)
+        logging.info(f"Generated new RSA keypair with kid={new_kid}")
         echidna.write_key_files(new_kid, private_pem, public_pem)
+        logging.info(f"Wrote key files for kid={new_kid}")
 
         # 2) insert public key as 'staging'
         echidna._insert_staging_key(new_kid, public_pem)
+        logging.info(f"Inserted staging key for kid={new_kid}")
 
         # 3) switch signer to new kid and flip statuses
         resp = echidna._promote_and_retire(new_kid, grace_minutes)
+        logging.info(f"Promoted key to active and retired old key(s); new active kid={new_kid}")
         echidna._write_active_kid(new_kid)
+        logging.info(f"Wrote active kid file with kid={new_kid}")
         return jsonify(resp), 200
 
     except PermissionError as pe:
-        print(f"Error in rotate_keys: {pe}")
+        logging.error(f"Permission error in rotate_keys: {pe}")
         return jsonify({"message": "Forbidden"}), 403
     except Exception as e:
-        print(f"Error in rotate_keys: {e}")
+        logging.error(f"Error in rotate_keys: {e}")
         return jsonify({"message": "Rotation failed"}), 500
 
 

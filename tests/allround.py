@@ -17,9 +17,9 @@ import requests
 # All calls in this script go to https://.../auth/...
 args = SimpleNamespace(
     base="https://sobbingly-hydrochloric-joel.ngrok-free.dev/auth",
-    admin_token="In%9%The%20%Beginning%2%God%7%Created%3%The%20%Heavens%8%And%1%The%20%Earth",
+    admin_token="qwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnm",
     email="oluwajuwonadedowole@gmail.com",
-    telegram="123456789",
+    telegram="6965644872",
     name="John Doe",
     pass1="Password1!",
     pass2="NewPassw0rd!",
