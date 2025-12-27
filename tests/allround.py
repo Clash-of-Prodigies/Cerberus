@@ -17,8 +17,8 @@ import requests
 # All calls in this script go to https://.../auth/...
 args = SimpleNamespace(
     base="https://sobbingly-hydrochloric-joel.ngrok-free.dev/auth",
-    admin_token="qwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnm",
-    email="name@example.com",
+    admin_token="In%9%The%20%Beginning%2%God%7%Created%3%The%20%Heavens%8%And%1%The%20%Earth",
+    email="oluwajuwonadedowole@gmail.com",
     telegram="123456789",
     name="John Doe",
     pass1="Password1!",
@@ -84,7 +84,7 @@ def expect_status(resp: requests.Response, want: int, label: str) -> None:
     raise SystemExit(f"Expected HTTP {want} for '{label}'")
 
 
-def http_call(sess: requests.Session, method: str, path: str, label: str, **kwargs) -> requests.Response:
+def http_call(sess: requests.Session | None, method: str, path: str, label: str, **kwargs) -> requests.Response:
     """
     Wrapper around requests / session.request that:
       - builds full URL using BASE + path
