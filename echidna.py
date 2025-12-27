@@ -95,22 +95,18 @@ def isNameAvailable(name: str, expected: bool = True):
     """
     Check if a username is available in the database
     """
-    try:
-        conn = get_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM credentials WHERE username = %s", (name,))
-        result = cursor.fetchone()
-        cursor.close()
-        conn.close()
-        available = result is None
-        if available != expected:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM credentials WHERE username = %s", (name,))
+    result = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    available = result is None
+    if available != expected:
             if expected:
                 raise ValueError("Name is already taken.")
             else:
                 raise ValueError("Name is available.")
-    except Exception as e:
-        print(f"Error checking name availability: {e}")
-        raise RuntimeError("Failed to check name availability.")
 
 def checkUserExists(user: User, expected: bool):
     row = None
