@@ -41,7 +41,7 @@ class User:
                 if not r.get('status', True):
                     raise ValueError('Email is not valid!')
             except Exception:
-                # Fail-open by default. If you want strict mode, gate with an env var.
+                # Fail-open by default. If strict mode, gate with an env var.
                 pass
         return email
     
@@ -77,7 +77,7 @@ class User:
             raise ValueError('Passwords do not match!')
 
     def name_check(self) -> str:
-        n = self.name.strip()
+        n = self.name.strip().lower()
         # 5–30 chars, letters/numbers/space and a small safe punctuation set.
         if not re.fullmatch(r"[A-Za-z0-9 _.\-'&!?,@]{5,30}", n):
             raise ValueError('Name must be 5–30 chars of letters, numbers, spaces, and limited punctuation.')
