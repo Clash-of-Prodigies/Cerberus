@@ -113,31 +113,28 @@ def isNameAvailable(name: str, expected: bool = True):
         raise RuntimeError("Failed to check name availability.")
 
 def checkUserExists(user: User, expected: bool, verifyIfUserIsPending: bool = False):
-    try:
-        conn = get_connection(); cur = conn.cursor()
-        cur.execute("""
-            SELECT status, name FROM credentials
-            WHERE ((email=%s AND %s <> '') OR (telegram=%s AND %s <> ''))
-            LIMIT 1""",
-            (user.email, user.email, user.telegram, user.telegram))
+    row = None
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""SELECT status, name FROM credentials
+                WHERE ((email=%s AND %s <> '') OR (telegram=%s AND %s <> ''))
+                LIMIT 1""",
+                (user.email, user.email, user.telegram, user.telegram)
+            )
         row = cur.fetchone()
-        cur.close(); conn.close()
 
-        exists = row is not None
-        is_active = (row and row[0] == 'active')
+    exists = row is not None
+    is_active = (row and row[0] == 'active')
 
-        if expected:
-            if not (exists and is_active):
-                if verifyIfUserIsPending and exists and not row[0] == 'pending':
-                    attempt_verification(user, channel='', purpose='registration')
-                    raise ValueError("User is pending verification. A new OTP has been sent.")
-                raise ValueError(f"User or password is invalid.")
-        else:
-            if exists:
-                raise ValueError("User already exists. Proceed to login.")
-    except Exception as e:
-        print(f"Error checking user existence: {e}")
-        raise RuntimeError("Failed to check user existence.")
+    if expected:
+        if not (exists and is_active):
+            if verifyIfUserIsPending and exists and not row[0] == 'pending':
+                attempt_verification(user, channel='', purpose='registration')
+                raise ValueError("User is pending verification. A new OTP has been sent.")
+            raise ValueError(f"User or password is invalid.")
+    else:
+        if exists:
+            raise ValueError("User already exists. Proceed to login.")
 
 
 def getUserPasswordHash(user: User) -> str:
