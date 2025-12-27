@@ -591,17 +591,14 @@ def _get_public_key_row(kid: str):
 
 
 def _insert_staging_key(kid: str, public_pem: str):
-    try:
-        with get_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute("""INSERT INTO keys (kid, alg, public_pem, status, created_at)
-                    VALUES (%s, 'RS256', %s, 'staging', now())
-                    ON CONFLICT (kid) DO NOTHING""",
-                    (kid, public_pem)
-                )
-            conn.commit()
-    except Exception as e:
-        raise RuntimeError(f"Failed to insert staging key. {str(e)}")
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""INSERT INTO keys (kid, alg, public_pem, status, created_at)
+                VALUES (%s, 'RS256', %s, 'staging', now())
+                ON CONFLICT (kid) DO NOTHING""",
+                (kid, public_pem)
+            )
+        conn.commit()
 
 def resolve_rotate_keys_auth(request: dict) -> tuple[int, int, str]:
     bits = int(request.get("bits", 2048))
