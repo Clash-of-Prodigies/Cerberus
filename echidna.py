@@ -326,6 +326,21 @@ def _check_if_otp_was_consumed(prodigy_id, purpose, channel) -> str:
         return ''
     return row[0]
 
+
+
+def _get_name_by_prodigy_id(prodigy_id: int) -> str:
+    conn = get_connection(); cur = conn.cursor()
+    cur.execute("""
+        SELECT username
+          FROM credentials
+         WHERE prodigy_id=%s
+         LIMIT 1
+    """, (int(prodigy_id),))
+    row = cur.fetchone(); cur.close(); conn.close()
+    if not row:
+        raise ValueError("User not found.")
+    return row[0]
+
 def attempt_verification(user: User, channel: str = '', purpose: str = 'reset') -> None:
     if not user.email and not user.telegram:
         raise ValueError("No contact information provided for verification.")
@@ -344,6 +359,7 @@ def attempt_verification(user: User, channel: str = '', purpose: str = 'reset') 
     # send via Messaging service
     data = {'code': code}
     data['username'] = user.name
+    user.name = _get_name_by_prodigy_id(prodigy_id)
     send_message(user, data, 'Verify Your Account', idempotent_key, channel)
 
 def verify_otp(user: User, code: str, purpose: str = 'reset', channel: str = '') -> None:
