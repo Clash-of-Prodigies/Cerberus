@@ -121,7 +121,7 @@ def checkUserExists(user: User, expected: bool, verifyIfUserIsPending: bool = Fa
                 LIMIT 1""",
                 (user.email, user.email, user.telegram, user.telegram)
             )
-        row = cur.fetchone()
+            row = cur.fetchone()
 
     exists = row is not None
     is_active = (row and row[0] == 'active')
