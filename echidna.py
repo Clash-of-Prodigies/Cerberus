@@ -97,7 +97,7 @@ class User:
         if len(fn) < 5 or len(fn) > 50:
             raise ValueError('Full name must be 5–50 chars long.')
         if not re.fullmatch(r"[A-Za-z]+(?:-[A-Za-z]+)*\s+[A-Za-z]+", fn):
-            raise ValueError('Full name must be 3–50 chars of letters, spaces, and limited punctuation.')
+            raise ValueError('Full name must have at least first and last name, letters and hyphens only.')
         return fn
     
     def _age_check(self) -> int:
