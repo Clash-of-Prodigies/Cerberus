@@ -20,7 +20,7 @@ class User:
         self.email = kwargs.get('email', '')
         self.telegram = kwargs.get('telegram', '')
         self.password = kwargs.get('password', '')
-        self.name = kwargs.get('name', '')
+        self.name = kwargs.get('username', '')
         self.fullName = kwargs.get('full-name', '')
         self.age = kwargs.get('age', 0)
         self.referralCode = kwargs.get('referrer', '')
@@ -86,9 +86,10 @@ class User:
 
     def _name_check(self) -> str:
         n = self.name.strip().lower()
-        # 5–30 chars, letters/numbers/space and a small safe punctuation set.
-        if not re.fullmatch(r"[a-z0-9 _.\-'&!?,@]{5,30}", n):
-            raise ValueError('Name must be 5–30 chars of letters, numbers, spaces, and limited punctuation.')
+        if len(n) < 5 or len(n) > 15:
+            raise ValueError('Name must be 5–15 chars long.')
+        if not re.fullmatch(r"[a-z0-9_ .-]{5,15}", n):
+            raise ValueError('Name may contain alphanumeric, whitespace, underscore, period and hyphen.')
         return n
 
     def _fullname_check(self) -> str:
