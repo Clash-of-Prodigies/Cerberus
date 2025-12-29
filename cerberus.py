@@ -44,7 +44,7 @@ def register():
         user.check_before_entry()
         echidna.isNameAvailable(user.name)
         echidna.checkUserExists(user, False)
-        user.confirm_password(data.get('confirm_password', ''))
+        user.confirm_password(data.get('confirm-password', ''))
         echidna.registerUser(user) # user is unverified at this point
         echidna.attempt_verification(user,channel=data.get('channel',''),purpose='registration')
         return jsonify({'message': 'Registration Successful'}), 201
