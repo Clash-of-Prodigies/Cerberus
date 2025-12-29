@@ -198,31 +198,23 @@ def registerUser(user: User):
     """
     Register a new user in the database
     """
-    try:
-        conn = get_connection()
-        cursor = conn.cursor()
-        hashed_password = hash_password(user.password)
-        cursor.execute(
-            """INSERT INTO credentials (username, email, telegram, referral_code, password)
-            VALUES (%s, %s, %s, %s, %s) RETURNING prodigy_id""", 
-            (user.name, user.email, user.telegram, user.referralCode, hashed_password)
-        )
-        row = cursor.fetchone()
-        if cursor.rowcount != 1 or not row:
-            raise RuntimeError("Failed to register user.")
-        prodigy_id = row[0]
-        cursor.execute(
-            """
-            INSERT INTO users (prodigy_id, full_name, age, institution,)
-            VALUES (%s, %s, %s, %s, %s, %s)""",
-            (prodigy_id, user.fullName, user.age, user.referralCode, user.institution, user.acceptedTerms)
-        )
-        conn.commit()
-        cursor.close()
-        conn.close()
-    except Exception as e:
-        print(f"Error registering user: {e}")
-        raise RuntimeError("Failed to register user.")
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            hashed_password = hash_password(user.password)
+            cursor.execute("""
+                INSERT INTO credentials (username, email, telegram, referral_code, password)
+                VALUES (%s, %s, %s, %s, %s) RETURNING prodigy_id""", 
+                (user.name, user.email, user.telegram, user.referralCode, hashed_password)
+            )
+            row = cursor.fetchone()
+            if not row: raise RuntimeError("Row not inserted.")
+            prodigy_id = row[0]
+            cursor.execute("""
+                INSERT INTO users (prodigy_id, full_name, age, institution,)
+                VALUES (%s, %s, %s, %s, %s, %s)""",
+                (prodigy_id, user.fullName, user.age, user.referralCode, user.institution, user.acceptedTerms)
+            )
+            conn.commit()
 
 def environmentals(param: str, default: str = "", delimiter: str = ",") -> str:
     """
