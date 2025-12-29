@@ -94,10 +94,10 @@ class User:
     def _fullname_check(self) -> str:
         # [A-Za-z]+(?:-[A-Za-z]+)*\s+[A-Za-z]+
         fn = self.fullName.strip()
-        if not re.fullmatch(r"[A-Za-z]+(?:-[A-Za-z]+)*\s+[A-Za-z]+", fn):
-            raise ValueError('Full name must be 3–50 chars of letters, spaces, and limited punctuation.')
         if len(fn) < 5 or len(fn) > 50:
             raise ValueError('Full name must be 5–50 chars long.')
+        if not re.fullmatch(r"[A-Za-z]+(?:-[A-Za-z]+)*\s+[A-Za-z]+", fn):
+            raise ValueError('Full name must be 3–50 chars of letters, spaces, and limited punctuation.')
         return fn
     
     def _age_check(self) -> int:
