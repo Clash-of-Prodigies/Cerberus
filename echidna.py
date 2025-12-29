@@ -87,7 +87,7 @@ class User:
     def _name_check(self) -> str:
         n = self.name.strip().lower()
         # 5–30 chars, letters/numbers/space and a small safe punctuation set.
-        if not re.fullmatch(r"[A-Za-z0-9 _.\-'&!?,@]{5,30}", n):
+        if not re.fullmatch(r"[a-z0-9 _.\-'&!?,@]{5,30}", n):
             raise ValueError('Name must be 5–30 chars of letters, numbers, spaces, and limited punctuation.')
         return n
 
