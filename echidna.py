@@ -21,14 +21,22 @@ class User:
         self.telegram = kwargs.get('telegram', '')
         self.password = kwargs.get('password', '')
         self.name = kwargs.get('name', '')
+        self.fullName = kwargs.get('full-name', '')
+        self.age = kwargs.get('age', 0)
+        self.referralCode = kwargs.get('referrer', '')
+        self.institution = kwargs.get('institution', '')
+        self.acceptedTerms = kwargs.get('agreed', False)
 
     def check_before_entry(self):
-        self.email = self.email_check()
-        self.telegram = self.telegram_check()
-        self.name = self.name_check()
-        self.password_check()
+        self.email = self._email_check()
+        self.telegram = self._telegram_check()
+        self.fullName = self._fullname_check()
+        self.name = self._name_check()
+        self.age = self._age_check()
+        self.referralCode = self._referralCode_check()
+        self._password_check()
 
-    def email_check(self) -> str:
+    def _email_check(self) -> str:
         email = self.email.lower().strip()
         if not email:
             raise ValueError('Email is required!')
@@ -45,14 +53,14 @@ class User:
                 pass
         return email
     
-    def telegram_check(self) -> str:
+    def _telegram_check(self) -> str:
         chat_id = self.telegram.strip()
         # Accept numeric IDs, including supergroups/channels like "-1001234567890"
         if chat_id and not re.fullmatch(r'-?(?:100)?\d{5,20}', chat_id):
             raise ValueError('Telegram chat id is not valid!')
         return chat_id
 
-    def password_check(self) -> None:
+    def _password_check(self) -> None:
         """
         Check if the provided password meets complexity requirements
         """
@@ -72,16 +80,48 @@ class User:
         """
         Confirm that the provided password matches the user's password
         """
-        self.password_check()
+        self._password_check()
         if self.password != confirm_password:
             raise ValueError('Passwords do not match!')
 
-    def name_check(self) -> str:
+    def _name_check(self) -> str:
         n = self.name.strip().lower()
         # 5–30 chars, letters/numbers/space and a small safe punctuation set.
         if not re.fullmatch(r"[A-Za-z0-9 _.\-'&!?,@]{5,30}", n):
             raise ValueError('Name must be 5–30 chars of letters, numbers, spaces, and limited punctuation.')
         return n
+
+    def _fullname_check(self) -> str:
+        # [A-Za-z]+(?:-[A-Za-z]+)*\s+[A-Za-z]+
+        fn = self.fullName.strip()
+        if not re.fullmatch(r"[A-Za-z]+(?:-[A-Za-z]+)*\s+[A-Za-z]+", fn):
+            raise ValueError('Full name must be 3–50 chars of letters, spaces, and limited punctuation.')
+        if len(fn) < 5 or len(fn) > 50:
+            raise ValueError('Full name must be 5–50 chars long.')
+        return fn
+    
+    def _age_check(self) -> int:
+        age = int(self.age)
+        if age < 10 or age > 25:
+            raise ValueError('Age must be between 10 and 25.')
+        return age
+    
+    def _referralCode_check(self) -> str:
+        code = self.referralCode.strip()
+        if code and not re.fullmatch(r"[A-Z]{1,2}[0-9][0-9A-Z]?\s[0-9][A-Z]{2}", code):
+            raise ValueError('Referral code must be 6 alphanumeric characters.')
+        return code
+
+    def _insitution_check(self) -> str:
+        institution = self.institution.strip()
+        if institution and len(institution) > 50:
+            raise ValueError('Institution name must be less than 100 characters.')
+        return institution
+    
+    def _accepted_terms_check(self) -> bool:
+        if not self.acceptedTerms:
+            raise ValueError('You must accept the terms and conditions.')
+        return True
     
     def clear(self) -> None:
         """
@@ -90,6 +130,11 @@ class User:
         self.email = ''
         self.password = ''
         self.name = ''
+        self.fullName = ''
+        self.age = 0
+        self.referralCode = ''
+        self.institution = ''
+        self.acceptedTerms = False
 
 def isNameAvailable(name: str, expected: bool = True):
     """
@@ -157,8 +202,19 @@ def registerUser(user: User):
         cursor = conn.cursor()
         hashed_password = hash_password(user.password)
         cursor.execute(
-            "INSERT INTO credentials (username, email, telegram, password) VALUES (%s, %s, %s, %s)",
-            (user.name, user.email, user.telegram, hashed_password)
+            """INSERT INTO credentials (username, email, telegram, referral_code, password)
+            VALUES (%s, %s, %s, %s, %s) RETURNING prodigy_id""", 
+            (user.name, user.email, user.telegram, user.referralCode, hashed_password)
+        )
+        row = cursor.fetchone()
+        if cursor.rowcount != 1 or not row:
+            raise RuntimeError("Failed to register user.")
+        prodigy_id = row[0]
+        cursor.execute(
+            """
+            INSERT INTO users (prodigy_id, full_name, age, institution,)
+            VALUES (%s, %s, %s, %s, %s, %s)""",
+            (prodigy_id, user.fullName, user.age, user.referralCode, user.institution, user.acceptedTerms)
         )
         conn.commit()
         cursor.close()
@@ -391,7 +447,7 @@ def verify_otp(user: User, code: str, purpose: str = 'reset', channel: str = '')
 
 
 def update_password(user: User) -> None:
-    user.password_check()
+    user._password_check()
     hashed = hash_password(user.password)
     conn = get_connection(); cur = conn.cursor()
     cur.execute("""
