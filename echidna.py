@@ -212,7 +212,7 @@ def registerUser(user: User):
             cursor.execute("""
                 INSERT INTO users (prodigy_id, full_name, age, institution)
                 VALUES (%s, %s, %s, %s)""",
-                (prodigy_id, user.fullName, user.age, user.referralCode, user.institution, user.acceptedTerms)
+                (prodigy_id, user.fullName, user.age, user.institution)
             )
             conn.commit()
 
