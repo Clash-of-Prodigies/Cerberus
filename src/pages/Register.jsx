@@ -30,7 +30,7 @@ export default function Register() {
   const navigate = useNavigate();
 
   const AUTH_BASE = useMemo(
-    () => normalizeBase(import.meta.env.VITE_AUTH_BASE_URL),
+    () => normalizeBase(import.meta.env.VITE_BACKEND_URL),
     []
   );
 
@@ -143,7 +143,7 @@ export default function Register() {
     } catch (err) {
       setStatus({
         type: "error",
-        message: "Network error. Please try again.",
+        message: `Network error. ${err.message} Please try again.`,
       });
     } finally {
       setSubmitting(false);

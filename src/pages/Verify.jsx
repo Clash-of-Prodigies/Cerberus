@@ -38,7 +38,7 @@ export default function Verify() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const AUTH_BASE = useMemo(
-    () => normalizeBase(import.meta.env.VITE_AUTH_BASE_URL),
+    () => normalizeBase(import.meta.env.VITE_BACKEND_URL),
     []
   );
 
@@ -398,7 +398,7 @@ export default function Verify() {
                 autoComplete="off"
               />
               <p className="text-xs text-white/50 mt-2">
-                Codes are 6 digits and expire after a short period. :contentReference[oaicite:11]{index=11}
+                Codes are 6 digits and expire after a short period.
               </p>
             </div>
 

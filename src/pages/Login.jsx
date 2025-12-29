@@ -29,7 +29,7 @@ export default function Login() {
   const navigate = useNavigate();
 
   const AUTH_BASE = useMemo(
-    () => normalizeBase(import.meta.env.VITE_AUTH_BASE_URL),
+    () => normalizeBase(import.meta.env.VITE_BACKEND_URL),
     []
   );
 
