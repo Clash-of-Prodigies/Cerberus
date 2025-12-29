@@ -214,7 +214,6 @@ def registerUser(user: User):
                 VALUES (%s, %s, %s, %s)""",
                 (prodigy_id, user.fullName, user.age, user.institution)
             )
-            conn.commit()
 
 def environmentals(param: str, default: str = "", delimiter: str = ",") -> str:
     """
