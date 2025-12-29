@@ -1,11 +1,11 @@
 import React, { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Shield, LogIn, AlertTriangle, Loader2, KeyRound, Mail } from "lucide-react";
 
-function normalizeBase(base) {
-  if (base == null) return "/auth";
+function normalizeBase(base, defaultPath = "/auth") {
+  if (base == null) return defaultPath;
   const trimmed = String(base).trim();
-  if (!trimmed) return "/auth";
+  if (!trimmed) return defaultPath;
   return trimmed.endsWith("/") ? trimmed.slice(0, -1) : trimmed;
 }
 
@@ -27,11 +27,19 @@ function splitIdentifier(identifier) {
 
 export default function Login() {
   const navigate = useNavigate();
+  const [searchParams, _] = useSearchParams();
 
   const AUTH_BASE = useMemo(
     () => normalizeBase(import.meta.env.VITE_BACKEND_URL),
     []
   );
+
+  const APP_BASE = useMemo(
+    () => normalizeBase(import.meta.env.VITE_BACKEND_URL, "https://google.com"),
+    []
+  );
+
+  const caller = decodeURI(searchParams.get("utm_source") || APP_BASE);
 
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -85,9 +93,10 @@ export default function Login() {
 
       setStatus({ type: "success", message: "Login successful." });
 
-      // You can change this to your authenticated landing route later.
-      // Cerberus exposes /dashboard as a token-protected example. :contentReference[oaicite:7]{index=7}
-      // For now, remain on the login page.
+      // Redirect to caller after short delay.
+	  setTimeout(() => {
+		window.location.href = encodeURI(caller);
+	  }, 1000);
     } catch {
       setStatus({ type: "error", message: "Network error. Please try again." });
     } finally {
