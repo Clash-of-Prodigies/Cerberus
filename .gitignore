@@ -26,6 +26,8 @@ package-lock.json
 
 # Python dependencies
 __pycache__/
+*.pyc
+*.pyo
 
 # Virtual environment
 .venv/
