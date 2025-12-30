@@ -406,8 +406,6 @@ def attempt_verification(user: User, channel: str = '', purpose: str = 'reset') 
     
     # send via Messaging service
     data = {'code': code}
-    data['username'] = user.name
-    user.name = _get_name_by_prodigy_id(prodigy_id)
     send_message(user, data, 'Verify Your Account', idempotent_key, channel)
 
 def verify_otp(user: User, code: str, purpose: str = 'reset', channel: str = '') -> None:
