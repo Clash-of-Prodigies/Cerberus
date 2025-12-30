@@ -10,10 +10,10 @@ import {
   Loader2,
 } from "lucide-react";
 
-function normalizeBase(base) {
-  if (base == null) return "/auth";
+function normalizeBase(base, defaultPath = "/auth") {
+  if (base == null) return defaultPath;
   const trimmed = String(base).trim();
-  if (!trimmed) return "/auth";
+  if (!trimmed) return defaultPath;
   return trimmed.endsWith("/") ? trimmed.slice(0, -1) : trimmed;
 }
 
@@ -70,7 +70,6 @@ export default function Register() {
 
     setSubmitting(true);
     try {
-      // Cerberus expects "confirm-password" (dash) on registration. :contentReference[oaicite:3]{index=3}
       const payload = {
         "full-name": form.fullName,
         username: form.username,
@@ -81,7 +80,6 @@ export default function Register() {
         institution: form.institution,
         password: form.password,
         "confirm-password": form.confirmPassword,
-        channel: form.channel,
         agreed: !!form.agreed,
       };
 
@@ -104,7 +102,6 @@ export default function Register() {
               purpose: "registration",
               email: form.email,
               telegram: form.telegram,
-              channel: form.channel,
             })
           );
           navigate(
@@ -128,17 +125,11 @@ export default function Register() {
         JSON.stringify({
           purpose: "registration",
           email: form.email,
-          telegram: form.telegram,
-          channel: form.channel,
         })
       );
 
       navigate(
-        `/verify?stage=code&purpose=registration&channel=${encodeURIComponent(
-          form.channel
-        )}&email=${encodeURIComponent(form.email)}&telegram=${encodeURIComponent(
-          form.telegram
-        )}`
+        `/verify?stage=code&purpose=registration&email=${encodeURIComponent(form.email)}`
       );
     } catch (err) {
       setStatus({
@@ -184,7 +175,7 @@ export default function Register() {
 
         <form onSubmit={onSubmit} className="space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="sm:col-span-2">
+            <div>
               <label className="block text-xs font-medium text-white/70 mb-1" htmlFor="fullName">
                 Full Name
               </label>
@@ -193,7 +184,7 @@ export default function Register() {
                 value={form.fullName}
                 onChange={(e) => setField("fullName", e.target.value)}
                 required
-                placeholder="First Last"
+                placeholder="Last First"
                 className="w-full rounded-xl bg-white/5 border border-white/15 px-3 py-2 text-sm outline-none focus:border-tesoro-green"
                 pattern="[A-Za-z]+(?:-[A-Za-z]+)*\s+[A-Za-z]+"
                 title="Please enter a first and last name."
@@ -218,23 +209,10 @@ export default function Register() {
               />
             </div>
 
+			<p className="sm:col-span-2 text-xs text-white/50 mt-1">
+                If you provide Telegram, you can choose it as the verification channel.
+            </p>
             <div>
-              <label className="block text-xs font-medium text-white/70 mb-1" htmlFor="age">
-                Age
-              </label>
-              <input
-                id="age"
-                value={form.age}
-                onChange={(e) => setField("age", e.target.value)}
-                required
-                type="number"
-                min={10}
-                max={25}
-                className="w-full rounded-xl bg-white/5 border border-white/15 px-3 py-2 text-sm outline-none focus:border-tesoro-green"
-              />
-            </div>
-
-            <div className="sm:col-span-2">
               <label className="block text-xs font-medium text-white/70 mb-1" htmlFor="email">
                 Email
               </label>
@@ -255,7 +233,7 @@ export default function Register() {
               </div>
             </div>
 
-            <div className="sm:col-span-2">
+            <div>
               <label className="block text-xs font-medium text-white/70 mb-1" htmlFor="telegram">
                 Telegram Chat ID (optional)
               </label>
@@ -270,12 +248,25 @@ export default function Register() {
                   autoComplete="off"
                 />
               </div>
-              <p className="text-xs text-white/50 mt-1">
-                If you provide Telegram, you can choose it as the verification channel.
-              </p>
             </div>
 
-            <div className="sm:col-span-2">
+			<div>
+              <label className="block text-xs font-medium text-white/70 mb-1" htmlFor="age">
+                Age
+              </label>
+              <input
+                id="age"
+                value={form.age}
+                onChange={(e) => setField("age", e.target.value)}
+                required
+                type="number"
+                min={10}
+                max={25}
+                className="w-full rounded-xl bg-white/5 border border-white/15 px-3 py-2 text-sm outline-none focus:border-tesoro-green"
+              />
+            </div>
+
+            <div>
               <label className="block text-xs font-medium text-white/70 mb-1" htmlFor="referrer">
                 Referral Code
               </label>
@@ -288,21 +279,6 @@ export default function Register() {
                 className="w-full rounded-xl bg-white/5 border border-white/15 px-3 py-2 text-sm outline-none focus:border-tesoro-green"
                 pattern="[A-Z]{1,2}[0-9][0-9A-Z]?\s[0-9][A-Z]{2}"
                 title="Please enter a valid referral code."
-                autoComplete="off"
-              />
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-medium text-white/70 mb-1" htmlFor="institution">
-                Name of Institution
-              </label>
-              <input
-                id="institution"
-                value={form.institution}
-                onChange={(e) => setField("institution", e.target.value)}
-                required
-                placeholder="School name"
-                className="w-full rounded-xl bg-white/5 border border-white/15 px-3 py-2 text-sm outline-none focus:border-tesoro-green"
                 autoComplete="off"
               />
             </div>
@@ -342,33 +318,19 @@ export default function Register() {
               />
             </div>
 
-            <div className="sm:col-span-2">
-              <p className="text-xs font-medium text-white/70 mb-2">Verification channel</p>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <label className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                  <input
-                    type="radio"
-                    name="channel"
-                    value="email"
-                    checked={form.channel === "email"}
-                    onChange={() => setField("channel", "email")}
-                  />
-                  <span className="text-sm">Email</span>
-                </label>
-                <label className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                  <input
-                    type="radio"
-                    name="channel"
-                    value="telegram"
-                    checked={form.channel === "telegram"}
-                    onChange={() => setField("channel", "telegram")}
-                    disabled={!form.telegram}
-                  />
-                  <span className={`text-sm ${!form.telegram ? "text-white/40" : ""}`}>
-                    Telegram {form.telegram ? "" : "(add Chat ID to enable)"}
-                  </span>
-                </label>
-              </div>
+			<div className="sm:col-span-2">
+              <label className="block text-xs font-medium text-white/70 mb-1" htmlFor="institution">
+                Name of Institution
+              </label>
+              <input
+                id="institution"
+                value={form.institution}
+                onChange={(e) => setField("institution", e.target.value)}
+                required
+                placeholder="School name"
+                className="w-full rounded-xl bg-white/5 border border-white/15 px-3 py-2 text-sm outline-none focus:border-tesoro-green"
+                autoComplete="off"
+              />
             </div>
 
             <div className="sm:col-span-2">
@@ -381,7 +343,9 @@ export default function Register() {
                   className="mt-1"
                 />
                 <span>
-                  I agree to the Terms of Service and Privacy Policy.
+                  I agree to the&nbsp;
+				  <Link className="text-tesoro-green hover:underline" to={import.meta.env.VITE_TERMS_URL}>Terms of Service</Link>&nbsp;
+				  and <Link className="text-tesoro-green hover:underline" to={import.meta.env.VITE_PRIVACY_URL}>Privacy Policy</Link>.
                 </span>
               </label>
             </div>
@@ -390,17 +354,19 @@ export default function Register() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-2xl bg-tesoro-green text-black font-semibold px-4 py-3 hover:brightness-110 transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full rounded-2xl bg-tesoro-green text-white font-semibold px-4 py-3 cursor-pointer hover:brightness-110 transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <UserPlus className="w-5 h-5" />}
             Create account
           </button>
 
           <div className="text-sm text-white/70 flex items-center justify-between">
-            <span>Already have an account?</span>
-            <Link className="text-tesoro-green hover:underline" to="/login">
-              Sign in
-            </Link>
+            <span>Already have an account?&nbsp;
+				<Link className="text-tesoro-green hover:underline" to="/login">Sign in</Link>
+            </span>
+			<Link className="text-tesoro-green hover:underline" to="/verify?purpose=reset">
+			  Forgot password?
+			</Link>
           </div>
         </form>
       </div>

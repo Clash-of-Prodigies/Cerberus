@@ -10,10 +10,10 @@ import {
   Loader2,
 } from "lucide-react";
 
-function normalizeBase(base) {
-  if (base == null) return "/auth";
+function normalizeBase(base, defaultPath = "/auth") {
+  if (base == null) return defaultPath;
   const trimmed = String(base).trim();
-  if (!trimmed) return "/auth";
+  if (!trimmed) return defaultPath;
   return trimmed.endsWith("/") ? trimmed.slice(0, -1) : trimmed;
 }
 
@@ -345,7 +345,7 @@ export default function Verify() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full rounded-2xl bg-tesoro-green text-black font-semibold px-4 py-3 hover:brightness-110 transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full rounded-2xl bg-tesoro-green text-white cursor-pointer font-semibold px-4 py-3 hover:brightness-110 transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowRight className="w-5 h-5" />}
               Continue
@@ -449,7 +449,7 @@ export default function Verify() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="flex-1 rounded-2xl bg-tesoro-green text-black font-semibold px-4 py-3 hover:brightness-110 transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 rounded-2xl bg-tesoro-green text-white cursor-pointer font-semibold px-4 py-3 hover:brightness-110 transition disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <KeyRound className="w-5 h-5" />}
                 Verify

@@ -34,6 +34,8 @@ class User:
         self.name = self._name_check()
         self.age = self._age_check()
         self.referralCode = self._referralCode_check()
+        self.institution = self._insitution_check()
+        self.acceptedTerms = self._accepted_terms_check()
         self._password_check()
 
     def _email_check(self) -> str:
@@ -49,13 +51,11 @@ class User:
                 if not r.get('status', True):
                     raise ValueError('Email is not valid!')
             except Exception:
-                # Fail-open by default. If strict mode, gate with an env var.
-                pass
+                raise ValueError('Email verification service is unavailable! Contact support.')
         return email
     
     def _telegram_check(self) -> str:
         chat_id = self.telegram.strip()
-        # Accept numeric IDs, including supergroups/channels like "-1001234567890"
         if chat_id and not re.fullmatch(r'-?(?:100)?\d{5,20}', chat_id):
             raise ValueError('Telegram chat id is not valid!')
         return chat_id

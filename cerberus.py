@@ -46,7 +46,7 @@ def register():
         echidna.checkUserExists(user, False)
         user.confirm_password(data.get('confirm-password', ''))
         echidna.registerUser(user) # user is unverified at this point
-        echidna.attempt_verification(user,channel=data.get('channel',''),purpose='registration')
+        echidna.attempt_verification(user, channel='email', purpose='registration')
         return jsonify({'message': 'Registration Successful'}), 201
     except ValueError as ve:
         return jsonify({'message': str(ve)}), 401
@@ -88,15 +88,15 @@ def verify_or_forgot():
     try:
         data = request.get_json(silent=True) or request.form
         user = echidna.User(**data) 
-        channel_choice = data.get('channel', 'email' if user.email else 'telegram')
         code = data.get('code', '')
         purpose = data.get('purpose', 'reset')
+        channel = data.get('channel', 'email' if user.email else 'telegram') if purpose == 'reset' else 'email'
 
         if not code:
-            echidna.attempt_verification(user, channel_choice, purpose='reset')
+            echidna.attempt_verification(user, channel, purpose='reset')
             return jsonify({'message': 'OTP sent successfully'}), 200
         else:
-            echidna.verify_otp(user, code, purpose=purpose, channel=channel_choice)
+            echidna.verify_otp(user, code, purpose=purpose, channel=channel)
             if purpose == 'reset':
                user.confirm_password(data.get('confirm_password', ''))
                echidna.update_password(user)
