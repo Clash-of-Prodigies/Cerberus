@@ -28,7 +28,7 @@ function parseErrorMessage(payload) {
 
 export default function Register() {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, _] = useSearchParams();
 
   const AUTH_BASE = useMemo(
     () => normalizeBase(import.meta.env.VITE_BACKEND_URL),
