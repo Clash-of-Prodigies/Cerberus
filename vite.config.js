@@ -4,9 +4,9 @@ import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig(({mode}) => {
   var backendUrl = '';
-  var terms_and_policy_base = new URL('https://www.freeprivacypolicy.com/live/');
-  var termsURL = new URL('/live/6fbb5983-935c-493b-80c0-0e863dbccd9a', terms_and_policy_base);
-  var privacyURL = new URL('/live/8dd76e22-df05-4c81-b107-b09657a045ca', terms_and_policy_base);
+  var terms_and_policy_base = new URL('/live', 'https://www.freeprivacypolicy.com/');
+  var termsURL = new URL('/6fbb5983-935c-493b-80c0-0e863dbccd9a', terms_and_policy_base);
+  var privacyURL = new URL('/8dd76e22-df05-4c81-b107-b09657a045ca', terms_and_policy_base);
 
   if (mode === 'development') backendUrl = 'http://localhost:5000';
   else backendUrl = new URL('https://sobbingly-hydrochloric-joel.ngrok-free.dev/auth');
