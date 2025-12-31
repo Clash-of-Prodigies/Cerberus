@@ -35,7 +35,7 @@ export default function Login() {
   );
 
   const APP_BASE = useMemo(
-    () => normalizeBase(import.meta.env.VITE_BACKEND_URL, "https://google.com"),
+    () => normalizeBase(import.meta.env.VITE_APP_URL, "https://app.clashofprodigies.org"),
     []
   );
 

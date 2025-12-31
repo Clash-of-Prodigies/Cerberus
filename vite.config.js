@@ -15,6 +15,7 @@ export default defineConfig(({mode}) => {
       'import.meta.env.VITE_BACKEND_URL': JSON.stringify(backendUrl.toString()),
       'import.meta.env.VITE_TERMS_URL': JSON.stringify(termsURL.toString()),
       'import.meta.env.VITE_PRIVACY_URL': JSON.stringify(privacyURL.toString()),
+      'import.meta.env.VITE_APP_URL': JSON.stringify('https://app.clashofprodigies.org'),
     },
     plugins: [react(), tailwindcss()],
   }});
