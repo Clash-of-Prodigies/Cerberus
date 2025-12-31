@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Shield,
   UserPlus,
@@ -28,11 +28,19 @@ function parseErrorMessage(payload) {
 
 export default function Register() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const AUTH_BASE = useMemo(
     () => normalizeBase(import.meta.env.VITE_BACKEND_URL),
     []
   );
+
+  const formatReferrer = (ref) => {
+    if (!ref) return "AB6 7XY";
+    const trimmed = ref.trim().toUpperCase();
+    if (trimmed.length <= 3) return trimmed;
+    return `${trimmed.slice(0, -3)} ${trimmed.slice(-3)}`;
+  }
 
   const [status, setStatus] = useState({ type: "", message: "" });
   const [submitting, setSubmitting] = useState(false);
@@ -43,7 +51,7 @@ export default function Register() {
     email: "",
     telegram: "",
     age: "",
-    referrer: "",
+    referrer: formatReferrer(searchParams.get("ref") || "ab67xy"),
     institution: "",
     password: "",
     confirmPassword: "",
