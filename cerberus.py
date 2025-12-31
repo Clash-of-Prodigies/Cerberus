@@ -201,48 +201,20 @@ def logout(pid: str):
     return resp, 200
 
 @app.post("/admin/rotate-keys")
-def rotate_keys():
-    """
-    Rotates JWT signing keys.
-    Body (JSON, all optional):
-      bits: int (default 2048)
-      grace_minutes: int (default 45)  grace window for accepting the retired key
-      kid: string (default uuid4)      supply to control filename and kid
-    """
-    try:
-        CERBERUS_SECRET = echidna.send_secret()
-        token = request.args.get("token", "")
-        if not token: return "forbidden", 403
-        if token != CERBERUS_SECRET: return "forbidden", 403
-        body = request.get_json(silent=True) or {}
-        bits, grace_minutes, new_kid = echidna.resolve_rotate_keys_auth(body)
-        logging.info(f"Rotating keys: bits={bits}, grace_minutes={grace_minutes}, new_kid={new_kid}")
-
-        # 1) generate keypair in-process (PEM strings), then write to disk
-        private_pem, public_pem = echidna.gen_rsa_pair(new_kid, bits=bits)
-        logging.info(f"Generated new RSA keypair with kid={new_kid}")
-        echidna.write_key_files(new_kid, private_pem, public_pem)
-        logging.info(f"Wrote key files for kid={new_kid}")
-
-        # 2) insert public key as 'staging'
-        echidna._insert_staging_key(new_kid, public_pem)
-        logging.info(f"Inserted staging key for kid={new_kid}")
-
-        # 3) switch signer to new kid and flip statuses
-        resp = echidna._promote_and_retire(new_kid, grace_minutes)
-        logging.info(f"Promoted key to active and retired old key(s); new active kid={new_kid}")
-        echidna._write_active_kid(new_kid)
-        logging.info(f"Wrote active kid file with kid={new_kid}")
-        return jsonify(resp), 200
-
-    except PermissionError as pe:
-        logging.error(f"Permission error in rotate_keys: {pe}")
+def controller_rotate_keys():
+    CERBERUS_SECRET = echidna.send_secret()
+    token = request.args.get("token", "")
+    if not token: return "forbidden", 403
+    if token != CERBERUS_SECRET: return "forbidden", 403
+    body = request.get_json(silent=True) or {}
+    try: return jsonify(echidna.rotate_keys(body)), 200
+    except PermissionError:
         return jsonify({"message": "Forbidden"}), 403
     except Exception as e:
-        logging.error(f"Error in rotate_keys: {e}")
+        logging.error(f"Error in controller_rotate_keys: {e}")
         return jsonify({"message": "Rotation failed"}), 500
 
 
 if __name__ == '__main__':
-    rotate_keys()
+    echidna.rotate_keys()
     app.run(host="0.0.0.0", port=5000, debug=True)

@@ -1,4 +1,5 @@
 import secrets, hashlib, hmac
+from flask import logging
 from jwcrypto import jwk
 from datetime import datetime, timezone, timedelta
 from psycopg import Connection, connect as pg_connect
@@ -558,6 +559,29 @@ def _get_token_version(prodigy_id: int) -> tuple[int, datetime]:
         if not row:
             raise ValueError("User not found.")
         return row[0], row[1]
+
+
+def rotate_keys(body={}):
+    """
+    Rotates JWT signing keys.
+    Body (JSON, all optional):
+      bits: int (default 2048)
+      grace_minutes: int (default 45)  grace window for accepting the retired key
+      kid: string (default uuid4)      supply to control filename and kid
+    """
+    bits, grace_minutes, new_kid = resolve_rotate_keys_auth(body)
+        
+        # 1) generate keypair in-process (PEM strings), then write to disk
+    private_pem, public_pem = gen_rsa_pair(new_kid, bits=bits)
+    write_key_files(new_kid, private_pem, public_pem)
+
+        # 2) insert public key as 'staging'
+    _insert_staging_key(new_kid, public_pem)
+
+        # 3) switch signer to new kid and flip statuses
+    resp = _promote_and_retire(new_kid, grace_minutes)
+    _write_active_kid(new_kid)
+    return resp
 
 def gen_rsa_pair(kid: str, bits: int = 2048, passphrase: str | None = None) -> tuple[str, str]:
     key = jwk.JWK.generate(kty="RSA", size=bits, kid=kid, use="sig", alg="RS256")
