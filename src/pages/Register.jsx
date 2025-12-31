@@ -209,11 +209,8 @@ export default function Register() {
               />
             </div>
 
-			<p className="sm:col-span-2 text-xs text-white/50 mt-1">
-                If you provide Telegram, you can choose it as the verification channel.
-            </p>
-            <div>
-              <label className="block text-xs font-medium text-white/70 mb-1" htmlFor="email">
+            <div className="sm:col-span-2">
+              <label className="text-xs font-medium text-white/70 mb-1" htmlFor="email">
                 Email
               </label>
               <div className="relative">
@@ -228,23 +225,6 @@ export default function Register() {
                   className="w-full pl-9 rounded-xl bg-white/5 border border-white/15 px-3 py-2 text-sm outline-none focus:border-tesoro-green"
                   pattern="[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"
                   title="Please enter a valid email address."
-                  autoComplete="off"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-white/70 mb-1" htmlFor="telegram">
-                Telegram Chat ID (optional)
-              </label>
-              <div className="relative">
-                <MessageCircle className="w-4 h-4 text-white/50 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  id="telegram"
-                  value={form.telegram}
-                  onChange={(e) => setField("telegram", e.target.value)}
-                  placeholder="123456789"
-                  className="w-full pl-9 rounded-xl bg-white/5 border border-white/15 px-3 py-2 text-sm outline-none focus:border-tesoro-green"
                   autoComplete="off"
                 />
               </div>
