@@ -1,9 +1,10 @@
 import secrets, hashlib, hmac
-from flask import logging
+from flask import Request, Response
 from jwcrypto import jwk
 from datetime import datetime, timezone, timedelta
 from psycopg import Connection, connect as pg_connect
 from psycopg.errors import OperationalError
+from jwt import InvalidTokenError, ExpiredSignatureError
 
 import os
 import re
@@ -478,6 +479,55 @@ def decode_access_token(token: str):
         leeway=5
     )
 
+
+def verify_jwt_token(req: Request) -> dict:
+        bearer = req.headers.get("Authorization", "")
+        token = req.cookies.get('jwt') or (bearer.split(" ",1)[1] if bearer.lower().startswith("bearer ") else None)
+        if not token:
+            # return {"message": "Missing token"}, 401
+            raise ValueError("No token or bearer was provided")
+
+        claims = decode_access_token(token)
+        sub = claims["sub"]
+        assert_prodigy_exists(sub)
+
+        # 1) JTI revocation
+        jti = claims.get("jti")
+        if jti and is_access_jti_revoked(jti):
+            # return {"message": "Token revoked"}, 401
+            raise ValueError("Token has been revoked")
+
+        # 2) Version + password-change cutoff with skew
+        ver_claim = int(claims.get("ver", -1))
+        ver_db, pw_cutoff, iat = get_user_token_guard(sub, int(claims["iat"]))
+
+        if ver_claim != ver_db:
+            # return {"message": "Token superseded"}, 401
+            raise ValueError("Token version mismatch")
+
+        skew = 10
+        if iat < (pw_cutoff - timedelta(seconds=skew)):
+            # return {"message": "Token older than password change"}, 401
+            raise ValueError("Token older than password change")
+
+        resp = {
+            "active": True,
+            "sub": sub,
+            "jti": claims.get("jti"),
+            "ver": ver_claim,
+            "iat": claims.get("iat"),
+            "exp": claims.get("exp"),
+        }
+        return resp
+
+def extract_token_and_bearer_from_request(req: Request) -> tuple[str, str]:
+    auth = req.headers.get("Authorization", "")
+    cookie_token = req.cookies.get("jwt")
+    if auth.startswith("Bearer ") and cookie_token:
+        bearer = auth.split(" ", 1)[1].strip()
+        token = cookie_token
+        return token, bearer
+    raise ValueError("No token or bearer was provided")
 
 def send_secret():
     CERBERUS_SECRET = environmentals('CERBERUS_SECRET', '')

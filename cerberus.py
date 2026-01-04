@@ -118,71 +118,35 @@ def verify_or_forgot():
 
 def token_required(f):
     @wraps(f)
-    def wrapped(*args, **kwargs):
-        bearer = request.headers.get("Authorization", "")
-        token = request.cookies.get('jwt') or (bearer.split(" ",1)[1] if bearer.lower().startswith("bearer ") else None)
-        if not token:
-            return jsonify({"message": "Missing token"}), 401
+    def decorated(*args, **kwargs):
         try:
-            claims = echidna.decode_access_token(token)
-            sub = claims["sub"]
-            echidna.assert_prodigy_exists(sub)
-
-            # 1) JTI revocation
-            jti = claims.get("jti")
-            if jti and echidna.is_access_jti_revoked(jti):
-                return jsonify({"message": "Token revoked"}), 401
-
-            # 2) Version + password-change cutoff with skew
-            ver_claim = int(claims.get("ver", -1))
-            ver_db, pw_cutoff, iat = echidna.get_user_token_guard(sub, int(claims["iat"]))
-
-            if ver_claim != ver_db:
-                return jsonify({"message": "Token superseded"}), 401
-
-            skew = 10
-            if iat < (pw_cutoff - echidna.timedelta(seconds=skew)):
-                print(f"[debug] iat={iat.isoformat()} pw_cutoff={pw_cutoff.isoformat()} skew={skew}s")
-                return jsonify({"message": "Token older than password change"}), 401
-
-        except ExpiredSignatureError:
-            return jsonify({"message": "Token expired", "redirect": "/login"}), 401
-        except InvalidTokenError:
-            return jsonify({"message": "Invalid token", "redirect": "/login"}), 401
+            resp = echidna.verify_jwt_token(request)
+        except (InvalidTokenError, ExpiredSignatureError) as ite:
+            return jsonify({"message": str(ite)}), 401
         except Exception as e:
-            logging.error(f"Error in token verification: {e}")
-            return jsonify({"message": "Token verification failed", "redirect": "/login"}), 401
-        return f(sub, *args, **kwargs)
-    return wrapped
-
-def extract_token_from_request() -> str:
-    auth = request.headers.get("Authorization", "")
-    if auth.startswith("Bearer "):
-        return auth.split(" ", 1)[1].strip()
-    cookie_token = request.cookies.get("jwt")
-    if cookie_token:
-        return cookie_token
-    raise ValueError("No token provided")
+            logging.error(f"Error in token_required: {e}")
+            return jsonify({"message": str(e)}), 401
+        # pass token info explicitly to the wrapped handler (no Flask globals)
+        return f(*args, token_info=resp, **kwargs)
+    return decorated
 
 
-@app.route('/dashboard')
+@app.post("/introspect")
 @token_required
-def dashboard(pid: str):
-    return jsonify({'message': f"Welcome {pid}! You are logged in."})
+def introspect(token_info:dict = {}):
+    return jsonify(token_info), 200
 
 @app.post("/logout")
 @token_required
-def logout(pid: str):
+def logout(pid: str, token_info:dict = {}):
     # revoke the current access token JTI
     try:
-        token = extract_token_from_request()
-        claims = echidna.decode_access_token(token)
-        jti = claims.get("jti")
-        exp = claims.get("exp") or 0
+        jti = token_info.get("jti", "")
+        exp = token_info.get("exp", "0")
         echidna.revoke_access_jti(jti, int(pid), exp)
     except Exception as e:
-        logging.error(f"Error in logout: {e}")
-        return jsonify({"message": "Logout failed"}), 500
+         logging.error(f"Error in logout: {e}")
+         return jsonify({"message": "Logout failed"}), 500
 
     want_all = False
     if request.is_json:
