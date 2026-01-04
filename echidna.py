@@ -481,44 +481,47 @@ def decode_access_token(token: str):
 
 
 def verify_jwt_token(req: Request) -> dict:
-        bearer = req.headers.get("Authorization", "")
-        token = req.cookies.get('jwt') or (bearer.split(" ",1)[1] if bearer.lower().startswith("bearer ") else None)
-        if not token:
-            # return {"message": "Missing token"}, 401
-            raise ValueError("No token or bearer was provided")
+    # Prefer Bearer over cookie, so API calls from SPAs work even if cookies aren't sent
+    auth = req.headers.get("Authorization", "")
+    token = None
+    if auth.lower().startswith("bearer "):
+        token = auth.split(" ", 1)[1].strip()
+    if not token:
+        token = req.cookies.get("jwt")
 
-        claims = decode_access_token(token)
-        sub = claims["sub"]
-        assert_prodigy_exists(sub)
+    if not token:
+        raise InvalidTokenError("Missing token")
 
-        # 1) JTI revocation
-        jti = claims.get("jti")
-        if jti and is_access_jti_revoked(jti):
-            # return {"message": "Token revoked"}, 401
-            raise ValueError("Token has been revoked")
+    # decode with small leeway to avoid false negatives on nbf/iat
+    claims = decode_access_token(token)  # ensure this uses leeway=5..10s
 
-        # 2) Version + password-change cutoff with skew
-        ver_claim = int(claims.get("ver", -1))
-        ver_db, pw_cutoff, iat = get_user_token_guard(sub, int(claims["iat"]))
+    sub = claims["sub"]
+    assert_prodigy_exists(sub)
 
-        if ver_claim != ver_db:
-            # return {"message": "Token superseded"}, 401
-            raise ValueError("Token version mismatch")
+    # 1) JTI revocation
+    jti = claims.get("jti")
+    if jti and is_access_jti_revoked(jti):
+        raise InvalidTokenError("Token revoked")
 
-        skew = 10
-        if iat < (pw_cutoff - timedelta(seconds=skew)):
-            # return {"message": "Token older than password change"}, 401
-            raise ValueError("Token older than password change")
+    # 2) Version + password-change cutoff with skew
+    ver_claim = int(claims.get("ver", -1))
+    ver_db, pw_cutoff, iat = get_user_token_guard(sub, int(claims["iat"]))
+    if ver_claim != ver_db:
+        raise InvalidTokenError("Token superseded")
 
-        resp = {
-            "active": True,
-            "sub": sub,
-            "jti": claims.get("jti"),
-            "ver": ver_claim,
-            "iat": claims.get("iat"),
-            "exp": claims.get("exp"),
-        }
-        return resp
+    skew = 10
+    if iat < (pw_cutoff - timedelta(seconds=skew)):
+        raise InvalidTokenError("Token older than password change")
+
+    return {
+        "active": True,
+        "sub": sub,
+        "jti": claims.get("jti"),
+        "ver": ver_claim,
+        "iat": claims.get("iat"),
+        "exp": claims.get("exp"),
+    }
+
 
 def extract_token_and_bearer_from_request(req: Request) -> tuple[str, str]:
     auth = req.headers.get("Authorization", "")

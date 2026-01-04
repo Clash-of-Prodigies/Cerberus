@@ -14,7 +14,7 @@ logging.basicConfig(
 app = Flask(__name__)
 app.config['SECRET_KEY'] = echidna.send_secret()
 
-ALLOWED_ROOTS = ["clash-of-prodigies.github.io", "clashofprodigies.org"]
+ALLOWED_ROOTS = ["clash-of-prodigies.github.io", "auth.clashofprodigies.org"]
 
 def is_allowed_origin(origin: str) -> bool:
     if not origin:
@@ -23,7 +23,7 @@ def is_allowed_origin(origin: str) -> bool:
     host = parsed.hostname
     if not host:
         return False
-    return any(host == root or host.endswith("." + root) for root in ALLOWED_ROOTS)
+    return any(host == root for root in ALLOWED_ROOTS)
 
 @app.after_request
 def add_cors_headers(response):
@@ -122,11 +122,10 @@ def token_required(f):
         try:
             resp = echidna.verify_jwt_token(request)
         except (InvalidTokenError, ExpiredSignatureError) as ite:
-            return jsonify({"message": str(ite)}), 401
+            return jsonify({"message": str(ite)}), 401, {"Cache-Control": "no-store"}
         except Exception as e:
             logging.error(f"Error in token_required: {e}")
-            return jsonify({"message": str(e)}), 401
-        # pass token info explicitly to the wrapped handler (no Flask globals)
+            return jsonify({"message": str(e)}), 401, {"Cache-Control": "no-store"}
         return f(*args, token_info=resp, **kwargs)
     return decorated
 
@@ -134,7 +133,14 @@ def token_required(f):
 @app.post("/introspect")
 @token_required
 def introspect(token_info:dict = {}):
-    return jsonify(token_info), 200
+    headers = {
+            "X-User-Id":   str(token_info["sub"]),
+            "X-Token-Exp": str(token_info.get("exp", "")),
+            "X-Token-Jti": str(token_info.get("jti", "")),
+            "X-Token-Ver": str(token_info.get("ver", "")),
+            "Cache-Control": "no-store",
+        }
+    return ("", 204, headers)
 
 @app.post("/logout")
 @token_required
