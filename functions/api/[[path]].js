@@ -7,9 +7,6 @@ export async function onRequest({ request, params }) {
   upstream.search = incomingUrl.search;
 
   const headers = new Headers(request.headers);
-
-  // Optional: if your browser sends a first-party cookie to app.domain.com,
-  // you can translate it into an Authorization header here.
   const token = getCookie(headers.get("cookie"), "access_token");
   if (token) headers.set("authorization", `Bearer ${token}`);
 
