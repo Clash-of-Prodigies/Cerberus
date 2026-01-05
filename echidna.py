@@ -486,6 +486,9 @@ def verify_jwt_token(req: Request) -> dict:
     if auth.lower().startswith("bearer "):
         token = auth.split(" ", 1)[1].strip()
     if not token:
+        token = req.cookies.get("jwt")
+
+    if not token:
         raise InvalidTokenError("Missing token")
 
     claims = decode_access_token(token)
