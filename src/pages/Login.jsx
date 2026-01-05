@@ -94,8 +94,11 @@ export default function Login() {
       setStatus({ type: "success", message: "Login successful." });
       // store authorization token in session storage for API clients
       if (data?.authorization) {
-        sessionStorage.setItem("authorization", data.authorization);
-        console.log("Stored authorization token in session storage.");
+        // set in cookie
+        document.cookie = `
+        jwt=${data.authorization};
+        path=/; max-age=${30*60}; samesite=strict domain=.clashofprodigies.org`;
+        console.log("Stored authorization token in cookie.");
       }
 
       // Redirect to caller after short delay.
