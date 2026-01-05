@@ -130,7 +130,7 @@ def token_required(f):
     return decorated
 
 
-@app.post("/introspect")
+@app.get("/introspect")
 @token_required
 def introspect(token_info:dict = {}):
     headers = {
