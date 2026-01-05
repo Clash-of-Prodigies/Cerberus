@@ -56,7 +56,7 @@ export default function Login() {
     setSubmitting(true);
     try {
       // Login sets an HTTP-only cookie named "jwt". :contentReference[oaicite:5]{index=5}
-      const res = await fetch(`/api/login`, {
+      const res = await fetch(`/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

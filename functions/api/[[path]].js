@@ -2,7 +2,7 @@ export async function onRequest({ request, params }) {
   const incomingUrl = new URL(request.url);
 
   const pathParts = Array.isArray(params.path) ? params.path : (params.path ? [params.path] : []);
-  const upstream = new URL("https://sobbingly-hydrochloric-joel.ngrok-free.dev/auth");
+  const upstream = new URL("https://sobbingly-hydrochloric-joel.ngrok-free.dev/");
   upstream.pathname = "/" + pathParts.join("/");
   upstream.search = incomingUrl.search;
 
