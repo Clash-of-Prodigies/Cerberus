@@ -2,7 +2,7 @@ export async function onRequest({ request, params }) {
   const incomingUrl = new URL(request.url);
 
   const pathParts = Array.isArray(params.path) ? params.path : (params.path ? [params.path] : []);
-  const upstream = new URL("https://crymeariver.backend.dev/");
+  const upstream = new URL("https://sobbingly-hydrochloric-joel.ngrok-free.dev/auth");
   upstream.pathname = "/" + pathParts.join("/");
   upstream.search = incomingUrl.search;
 
@@ -10,8 +10,8 @@ export async function onRequest({ request, params }) {
 
   // Optional: if your browser sends a first-party cookie to app.domain.com,
   // you can translate it into an Authorization header here.
-  // const token = getCookie(headers.get("cookie"), "access_token");
-  // if (token) headers.set("authorization", `Bearer ${token}`);
+  const token = getCookie(headers.get("cookie"), "access_token");
+  if (token) headers.set("authorization", `Bearer ${token}`);
 
   headers.delete("origin"); // generally safe to drop
 
