@@ -68,12 +68,6 @@ def login():
 
         prodigy_id = str(echidna.get_prodigy_id(user))
         token = echidna.make_access_token(prodigy_id, ttl_minutes=30)
-        response.set_cookie(
-            'jwt', token,
-            httponly=True, secure=request.is_secure, samesite='Lax', path='/',
-            max_age=30*60
-        )
-        # set authorization header as well for API clients
         response.headers['Authorization'] = f'Bearer {token}'
         return response, 200
     except ValueError as ve:
