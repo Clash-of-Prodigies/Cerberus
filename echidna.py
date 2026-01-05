@@ -481,7 +481,6 @@ def decode_access_token(token: str):
 
 
 def verify_jwt_token(req: Request) -> dict:
-    # Prefer Bearer over cookie, so API calls from SPAs work even if cookies aren't sent
     auth = req.headers.get("Authorization", "")
     token = None
     if auth.lower().startswith("bearer "):
@@ -492,8 +491,7 @@ def verify_jwt_token(req: Request) -> dict:
     if not token:
         raise InvalidTokenError("Missing token")
 
-    # decode with small leeway to avoid false negatives on nbf/iat
-    claims = decode_access_token(token)  # ensure this uses leeway=5..10s
+    claims = decode_access_token(token)
 
     sub = claims["sub"]
     assert_prodigy_exists(sub)

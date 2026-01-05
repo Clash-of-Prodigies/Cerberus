@@ -74,6 +74,8 @@ def login():
             httponly=True, secure=request.is_secure, samesite='Lax', path='/',
             max_age=30*60
         )
+        # set authorization header as well for API clients
+        response.headers['Authorization'] = f'Bearer {token}'
         return response, 200
     except ValueError as ve:
         return jsonify({'message': str(ve)}), 401
@@ -134,12 +136,12 @@ def token_required(f):
 @token_required
 def introspect(token_info:dict = {}):
     headers = {
-            "X-User-Id":   str(token_info["sub"]),
-            "X-Token-Exp": str(token_info.get("exp", "")),
-            "X-Token-Jti": str(token_info.get("jti", "")),
-            "X-Token-Ver": str(token_info.get("ver", "")),
-            "Cache-Control": "no-store",
-        }
+        "X-User-Id":   str(token_info["sub"]),
+        "X-Token-Exp": str(token_info.get("exp", "")),
+        "X-Token-Jti": str(token_info.get("jti", "")),
+        "X-Token-Ver": str(token_info.get("ver", "")),
+        "Cache-Control": "no-store",
+    }
     return ("", 204, headers)
 
 @app.post("/logout")
