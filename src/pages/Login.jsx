@@ -92,7 +92,6 @@ export default function Login() {
       }
 
       setStatus({ type: "success", message: "Login successful." });
-      // store authorization token in session storage for API clients
       if (data?.authorization) {
         // set in cookie
         document.cookie = `
