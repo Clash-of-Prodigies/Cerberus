@@ -68,7 +68,6 @@ def login():
 
         prodigy_id = str(echidna.get_prodigy_id(user))
         token = echidna.make_access_token(prodigy_id, ttl_minutes=30)
-        print(f"Generated token for prodigy_id {prodigy_id}: {token}...")
         response.set_cookie(
             'jwt', token,
             httponly=True, secure=request.is_secure, samesite='Lax', path='/',
