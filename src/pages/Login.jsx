@@ -95,11 +95,12 @@ export default function Login() {
       // store authorization token in session storage for API clients
       if (data?.authorization) {
         sessionStorage.setItem("authorization", data.authorization);
+        console.log("Stored authorization token in session storage.");
       }
 
       // Redirect to caller after short delay.
 	  setTimeout(() => {
-		window.location.href = encodeURI(caller);
+		//window.location.href = encodeURI(caller);
 	  }, 1000);
     } catch {
       setStatus({ type: "error", message: "Network error. Please try again." });
