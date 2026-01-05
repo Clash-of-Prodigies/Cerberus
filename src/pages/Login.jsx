@@ -68,7 +68,7 @@ export default function Login() {
       if (!res.ok) {
         const msg = parseErrorMessage(data);
 
-        // Pending verification triggers OTP re-send on backend. :contentReference[oaicite:6]{index=6}
+        // Pending verification triggers OTP re-send on backend.
         if (msg.toLowerCase().includes("pending verification")) {
           sessionStorage.setItem(
             "cerberus.verify.pending",
@@ -92,6 +92,10 @@ export default function Login() {
       }
 
       setStatus({ type: "success", message: "Login successful." });
+      // store authorization token in session storage for API clients
+      if (data?.authorization) {
+        sessionStorage.setItem("authorization", data.authorization);
+      }
 
       // Redirect to caller after short delay.
 	  setTimeout(() => {

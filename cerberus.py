@@ -64,13 +64,14 @@ def login():
         echidna.checkUserExists(user, True)
         password = echidna.getUserPasswordHash(user)
         echidna.verify_password(user.password, password)
-        response = jsonify({'message': 'Login Successful'})
-
         prodigy_id = str(echidna.get_prodigy_id(user))
         token = echidna.make_access_token(prodigy_id, ttl_minutes=30)
+        response = jsonify({'message': 'Login Successful', 'authorization': token})
+
+        
         response.set_cookie(
             'jwt', token,
-            httponly=True, secure=request.is_secure, samesite='Lax', path='/',
+            httponly=True, secure=True, samesite='Lax', path='/',
             max_age=30*60, domain=".clashofprodigies.org"
         )
         # set authorization header as well for API clients
