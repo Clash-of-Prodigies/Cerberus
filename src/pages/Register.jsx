@@ -90,8 +90,9 @@ export default function Register() {
         "confirm-password": form.confirmPassword,
         agreed: !!form.agreed,
       };
-
-      const res = await fetch(`${AUTH_BASE}/register`, {
+      
+      const registerUrl = new URL('/register', AUTH_BASE);
+      const res = await fetch(registerUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

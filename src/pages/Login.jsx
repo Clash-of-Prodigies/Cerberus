@@ -56,7 +56,8 @@ export default function Login() {
     setSubmitting(true);
     try {
       // Login sets an HTTP-only cookie named "jwt".
-      const res = await fetch(`/api/auth/login`, {
+      const loginUrl = new URL('/login', AUTH_BASE);
+      const res = await fetch(loginUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

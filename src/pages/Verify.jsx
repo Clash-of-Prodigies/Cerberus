@@ -89,8 +89,9 @@ export default function Verify() {
   }
 
   async function sendOtpForReset({ email, telegram, channelChoice }) {
-    // Cerberus /verify: if no code, it sends OTP (reset flow). :contentReference[oaicite:8]{index=8}
-    const res = await fetch(`${AUTH_BASE}/verify`, {
+    // Cerberus /verify: if no code, it sends OTP (reset flow).
+    const verifyUrl = new URL('/verify', AUTH_BASE);
+    const res = await fetch(verifyUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
