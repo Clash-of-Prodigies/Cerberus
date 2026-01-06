@@ -55,7 +55,7 @@ export default function Login() {
 
     setSubmitting(true);
     try {
-      // Login sets an HTTP-only cookie named "jwt". :contentReference[oaicite:5]{index=5}
+      // Login sets an HTTP-only cookie named "jwt".
       const res = await fetch(`/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -92,17 +92,10 @@ export default function Login() {
       }
 
       setStatus({ type: "success", message: "Login successful." });
-      if (data?.authorization) {
-        // set in cookie
-        document.cookie = `
-        jwt=${data.authorization};
-        path=/; max-age=${30*60}; samesite=strict domain=.clashofprodigies.org`;
-        console.log("Stored authorization token in cookie.");
-      }
 
       // Redirect to caller after short delay.
 	  setTimeout(() => {
-		//window.location.href = encodeURI(caller);
+		window.location.href = encodeURI(caller);
 	  }, 1000);
     } catch {
       setStatus({ type: "error", message: "Network error. Please try again." });
