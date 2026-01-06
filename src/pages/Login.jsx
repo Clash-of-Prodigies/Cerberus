@@ -1,43 +1,14 @@
-import React, { useMemo, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Shield, LogIn, AlertTriangle, Loader2, KeyRound, Mail } from "lucide-react";
 
-function normalizeBase(base, defaultPath = "/auth") {
-  if (base == null) return defaultPath;
-  const trimmed = String(base).trim();
-  if (!trimmed) return defaultPath;
-  return trimmed.endsWith("/") ? trimmed.slice(0, -1) : trimmed;
-}
+import { AUTH_BASE, APP_BASE } from "../utils.js";
+import { parseErrorMessage, splitIdentifier } from "../utils.js";
 
-function parseErrorMessage(payload) {
-  if (!payload) return "Request failed.";
-  if (typeof payload === "string") return payload;
-  if (Array.isArray(payload)) return payload.join(", ");
-  if (typeof payload.message === "string") return payload.message;
-  if (Array.isArray(payload.message)) return payload.message.join(", ");
-  return "Request failed.";
-}
-
-function splitIdentifier(identifier) {
-  const v = String(identifier || "").trim();
-  if (!v) return { email: "", telegram: "" };
-  if (v.includes("@")) return { email: v, telegram: "" };
-  return { email: "", telegram: v };
-}
 
 export default function Login() {
   const navigate = useNavigate();
   const [searchParams, _] = useSearchParams();
-
-  const AUTH_BASE = useMemo(
-    () => normalizeBase(`${import.meta.env.VITE_BACKEND_URL}/auth`),
-    []
-  );
-
-  const APP_BASE = useMemo(
-    () => normalizeBase(import.meta.env.VITE_APP_URL, "https://app.clashofprodigies.org"),
-    []
-  );
 
   const caller = decodeURI(searchParams.get("utm_source") || APP_BASE);
 
@@ -55,7 +26,6 @@ export default function Login() {
 
     setSubmitting(true);
     try {
-      // Login sets an HTTP-only cookie named "jwt".
       const loginUrl = new URL('/login', AUTH_BASE);
       const res = await fetch(loginUrl, {
         method: "POST",
@@ -69,7 +39,6 @@ export default function Login() {
       if (!res.ok) {
         const msg = parseErrorMessage(data);
 
-        // Pending verification triggers OTP re-send on backend.
         if (msg.toLowerCase().includes("pending verification")) {
           sessionStorage.setItem(
             "cerberus.verify.pending",
