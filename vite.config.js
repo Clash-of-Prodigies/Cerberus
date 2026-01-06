@@ -9,7 +9,7 @@ export default defineConfig(({mode}) => {
   var privacyURL = new URL('/8dd76e22-df05-4c81-b107-b09657a045ca', terms_and_policy_base);
 
   if (mode === 'development') backendUrl = 'http://localhost:5000';
-  else backendUrl = new URL('/api/auth');
+  else backendUrl = new URL('/api/');
   return {
     define: { 
       'import.meta.env.VITE_BACKEND_URL': JSON.stringify(backendUrl.toString()),

@@ -31,7 +31,7 @@ export default function Register() {
   const [searchParams, _] = useSearchParams();
 
   const AUTH_BASE = useMemo(
-    () => normalizeBase(import.meta.env.VITE_BACKEND_URL),
+    () => normalizeBase(`${import.meta.env.VITE_BACKEND_URL}/auth`),
     []
   );
 

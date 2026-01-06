@@ -30,7 +30,7 @@ export default function Login() {
   const [searchParams, _] = useSearchParams();
 
   const AUTH_BASE = useMemo(
-    () => normalizeBase(import.meta.env.VITE_BACKEND_URL),
+    () => normalizeBase(`${import.meta.env.VITE_BACKEND_URL}/auth`),
     []
   );
 
