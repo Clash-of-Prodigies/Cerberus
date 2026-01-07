@@ -67,8 +67,6 @@ def login():
         prodigy_id = str(echidna.get_prodigy_id(user))
         token = echidna.make_access_token(prodigy_id, ttl_minutes=30)
         response = jsonify({'message': 'Login Successful', 'authorization': token})
-
-        
         response.set_cookie(
             'jwt', token,
             httponly=True, secure=True, samesite='Lax', path='/',
@@ -124,10 +122,11 @@ def token_required(f):
         try:
             resp = echidna.verify_jwt_token(request)
         except (InvalidTokenError, ExpiredSignatureError) as ite:
+            logging.error(f"Token error in token_required: {ite}")
             return jsonify({"message": str(ite)}), 401, {"Cache-Control": "no-store"}
         except Exception as e:
             logging.error(f"Error in token_required: {e}")
-            return jsonify({"message": str(e)}), 401, {"Cache-Control": "no-store"}
+            return jsonify({"message": "Something went wrong"}), 401, {"Cache-Control": "no-store"}
         return f(*args, token_info=resp, **kwargs)
     return decorated
 
