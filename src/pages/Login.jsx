@@ -5,6 +5,44 @@ import { Shield, LogIn, AlertTriangle, Loader2, KeyRound, Mail } from "lucide-re
 import { AUTH_BASE, APP_BASE } from "../utils.js";
 import { parseErrorMessage, splitIdentifier } from "../utils.js";
 
+async function onSubmit(e, email, telegram, password, caller, setStatus, setSubmitting, navigate) {
+  e.preventDefault();
+  setStatus({ type: "", message: "" });
+
+  setSubmitting(true);
+  try {
+    const loginUrl = new URL('login', AUTH_BASE);
+    const res = await fetch(loginUrl, {
+      method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
+      body: JSON.stringify({ email, telegram, password }),
+    });
+
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      const msg = parseErrorMessage(data);
+
+      if (msg.toLowerCase().includes("pending verification")) {
+        sessionStorage.setItem("cerberus.verify.pending",
+          JSON.stringify({ purpose: "registration", email, telegram, channel: "email", }
+        ));
+        navigate(`/verify?stage=code&purpose=registration&email=${encodeURIComponent(email)}
+        &telegram=${encodeURIComponent(telegram)}`);
+        return;
+      }
+
+      setStatus({ type: "error", message: msg });
+      return;
+    }
+
+    setStatus({ type: "success", message: "Login successful." });
+
+    // Redirect to caller after short delay.
+	  setTimeout(() => { window.location.href = encodeURI(caller); }, 1000);
+    }
+    catch { setStatus({ type: "error", message: "Network error. Please try again." }); }
+    finally { setSubmitting(false); }
+}
 
 export default function Login() {
   const navigate = useNavigate();
@@ -18,61 +56,7 @@ export default function Login() {
   const [status, setStatus] = useState({ type: "", message: "" });
   const [submitting, setSubmitting] = useState(false);
 
-  async function onSubmit(e) {
-    e.preventDefault();
-    setStatus({ type: "", message: "" });
-
-    const { email, telegram } = splitIdentifier(identifier);
-
-    setSubmitting(true);
-    try {
-      const loginUrl = new URL('login', AUTH_BASE);
-      const res = await fetch(loginUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ email, telegram, password }),
-      });
-
-      const data = await res.json().catch(() => null);
-
-      if (!res.ok) {
-        const msg = parseErrorMessage(data);
-
-        if (msg.toLowerCase().includes("pending verification")) {
-          sessionStorage.setItem(
-            "cerberus.verify.pending",
-            JSON.stringify({
-              purpose: "registration",
-              email,
-              telegram,
-              channel: "email",
-            })
-          );
-          navigate(
-            `/verify?stage=code&purpose=registration&email=${encodeURIComponent(
-              email
-            )}&telegram=${encodeURIComponent(telegram)}`
-          );
-          return;
-        }
-
-        setStatus({ type: "error", message: msg });
-        return;
-      }
-
-      setStatus({ type: "success", message: "Login successful." });
-
-      // Redirect to caller after short delay.
-	  setTimeout(() => {
-		window.location.href = encodeURI(caller);
-	  }, 1000);
-    } catch {
-      setStatus({ type: "error", message: "Network error. Please try again." });
-    } finally {
-      setSubmitting(false);
-    }
-  }
+  const { email, telegram } = splitIdentifier(identifier);
 
   return (
     <div className="min-h-screen bg-tesoro-black text-white flex items-center justify-center px-4 py-10">
@@ -100,7 +84,9 @@ export default function Login() {
           </div>
         ) : null}
 
-        <form onSubmit={onSubmit} className="space-y-5">
+        <form className="space-y-5" onSubmit={(e) => onSubmit(
+          e, email, telegram, password, caller, setStatus, setSubmitting, navigate
+        )}>
           <div>
             <label className="block text-xs font-medium text-white/70 mb-1" htmlFor="identifier">
               Email or Telegram Chat ID
