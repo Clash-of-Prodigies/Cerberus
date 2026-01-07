@@ -96,7 +96,7 @@ export default function Register() {
     agreed: false,
   });
 
-  const registerUrl = new URL('/register', AUTH_BASE);
+  const registerUrl = new URL('register', AUTH_BASE);
 
   return (
     <div className="min-h-screen bg-tesoro-black text-white flex items-center justify-center px-4 py-10">

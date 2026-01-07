@@ -26,7 +26,7 @@ export default function Login() {
 
     setSubmitting(true);
     try {
-      const loginUrl = new URL('/login', AUTH_BASE);
+      const loginUrl = new URL('login', AUTH_BASE);
       const res = await fetch(loginUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

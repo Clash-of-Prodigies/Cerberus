@@ -183,8 +183,8 @@ export default function Verify() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const verifyUrl = new URL('/verify', AUTH_BASE);
-  const loginUrl = new URL('/login', AUTH_BASE);
+  const verifyUrl = new URL('verify', AUTH_BASE);
+  const loginUrl = new URL('login', AUTH_BASE);
   const isMethodStage = stage !== "code";
 
   return (
