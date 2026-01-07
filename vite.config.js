@@ -12,10 +12,8 @@ export default defineConfig(({mode}) => {
   const termsURL = new URL('6fbb5983-935c-493b-80c0-0e863dbccd9a', terms_and_policy_base);
   const privacyURL = new URL('8dd76e22-df05-4c81-b107-b09657a045ca', terms_and_policy_base);
 
-  const backendUrl = new URL('',
-    mode==='development' ? backend_dev_url:backend_prod_url);
-  const appPageUrl = new URL('',
-    mode==='development' ? app_page_dev_url : app_page_prod_url);
+  const backendUrl = new URL(mode==='development' ? backend_dev_url:backend_prod_url);
+  const appPageUrl = new URL(mode==='development' ? app_page_dev_url : app_page_prod_url);
   return {
     define: { 
       'import.meta.env.VITE_API_URL': JSON.stringify(backendUrl.toString()),
