@@ -1,5 +1,5 @@
-const AUTH_BASE = new URL('/auth/', import.meta.env.VITE_API_URL);
-const APP_BASE = new URL('/home/', import.meta.env.VITE_APP_URL);
+const AUTH_BASE = new URL('auth', import.meta.env.VITE_API_URL);
+const APP_BASE = new URL('home', import.meta.env.VITE_APP_URL);
 
 function parseErrorMessage(payload) {
   if (!payload) return "Request failed.";
@@ -17,6 +17,8 @@ function splitIdentifier(identifier) {
   return { email: "", telegram: v };
 }
 
+console.log('AUTH_BASE:', AUTH_BASE);
+console.log('APP_BASE:', APP_BASE);
 export { AUTH_BASE, APP_BASE };
 
 export { parseErrorMessage, splitIdentifier };
