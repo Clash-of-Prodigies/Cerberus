@@ -17,8 +17,6 @@ function splitIdentifier(identifier) {
   return { email: "", telegram: v };
 }
 
-console.log('AUTH_BASE:', AUTH_BASE);
-console.log('APP_BASE:', APP_BASE);
 export { AUTH_BASE, APP_BASE };
 
 export { parseErrorMessage, splitIdentifier };
