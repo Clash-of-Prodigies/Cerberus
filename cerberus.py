@@ -122,6 +122,7 @@ def token_required(f):
         try:
             resp = echidna.verify_jwt_token(request)
         except (InvalidTokenError, ExpiredSignatureError) as ite:
+            logging.error(f"Token error in token_required: {request.headers}")
             return jsonify({"message": str(ite)}), 401, {"Cache-Control": "no-store"}
         except Exception as e:
             logging.error(f"Error in token_required: {e}")
